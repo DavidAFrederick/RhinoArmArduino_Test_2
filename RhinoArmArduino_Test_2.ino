@@ -2,7 +2,7 @@
 #define SLAVE_ADDRESS 0x08
 //############################################
 
-// Dec 10, 2023   Merging Functions and communications
+// Dec 10, 2023   Interface A working - Arduino
 // On Git
 
 
