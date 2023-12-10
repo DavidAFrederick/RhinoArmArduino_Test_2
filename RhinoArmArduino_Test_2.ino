@@ -116,40 +116,40 @@ int send_data_array[array_size];
 int length_of_send_data_array;
 int last_command_received = 0;
 
-int IF_A_status = 0;   // Unknown = 0,  In Process = 1, Complete = 2
+int IF_A_status = 0;   // Current  status of joint moving to target = Unknown = 0,  In Process = 1, Complete = 2
 int IF_B_status = 0;
 int IF_C_status = 0;
-int IF_D_status = 0;
-int IF_E_status = 0;
-int IF_F_status = 0;
+//int IF_D_status = 0;
+//int IF_E_status = 0;
+//int IF_F_status = 0;
 
 int IF_A_count_status = 0;
 int IF_B_count_status = 0;
 int IF_C_count_status = 0;
-int IF_D_count_status = 0;
-int IF_E_count_status = 0;
-int IF_F_count_status = 0;
+//int IF_D_count_status = 0;
+//int IF_E_count_status = 0;
+//int IF_F_count_status = 0;
 
 int IF_A_count_target = 0;
 int IF_B_count_target = 0;
 int IF_C_count_target = 0;
-int IF_D_count_target = 0;
-int IF_E_count_target = 0;
-int IF_F_count_target = 0;
+//int IF_D_count_target = 0;
+//int IF_E_count_target = 0;
+//int IF_F_count_target = 0;
 
 int IF_A_count_difference = 0;
 int IF_B_count_difference = 0;
 int IF_C_count_difference = 0;
-int IF_D_count_difference = 0;
-int IF_E_count_difference = 0;
-int IF_F_count_difference = 0;
+//int IF_D_count_difference = 0;
+//int IF_E_count_difference = 0;
+//int IF_F_count_difference = 0;
 
 int IF_A_angle_target = 0;
 int IF_B_angle_target = 0;
 int IF_C_angle_target = 0;
-int IF_D_angle_target = 0;
-int IF_E_angle_target = 0;
-int IF_F_angle_target = 0;
+//int IF_D_angle_target = 0;
+//int IF_E_angle_target = 0;
+//int IF_F_angle_target = 0;
 
 
 //=================================================================================================
@@ -233,17 +233,27 @@ Serial.println(F(">> Restarting "));
 setup_monitor_output();
 setup_pin_modes();
 
+// Identify which Robot Arm Joint the Arduino interface is controlling
 set_interface_X_parameters_to_Joint('F'); copy_interface_X_parameters_to_interface_('A');
 set_interface_X_parameters_to_Joint('F'); copy_interface_X_parameters_to_interface_('B');
 set_interface_X_parameters_to_Joint('F'); copy_interface_X_parameters_to_interface_('C');
 print_interface_parameters();
 
+// Temporary test commands
 command = 30;    // Home
 command = 31;    // Out to max range
 command = 12; // Out then home
 //command = 10;
 }
 
+
+//=================================================================================================
+//  Python commands    (Note:  Arduino only handles 3 interfaces )
+//    Home One   - 10,      20,      30,      40,      50,      60
+//    Set Angle  - 11-xx,   21-xx,   31-xx,   41-xx,   51-xx,   61-xx
+//    Set Count  - 12-xxxx, 22-xxxx, 32-xxxx, 42-xxxx, 52-xxxx, 62-xxxx
+//
+//  NEED TO PREVENT NEW COMMAND FROM STARTING PRIOR COMPLETING CURRENT COMMAND
 //=================================================================================================
 void loop() {
 
@@ -256,32 +266,33 @@ void loop() {
     IF_A_go_to_home();
     break;
 
-  case 11:    // Move Joint A out to full range
-    command = 0;
-    if (debug_control > 2) Serial.println (F("Command 11 - Move Joint A over full range"));
-    IF_A_move_full_range(IF_A_range_full_count);  ///  << Limits movement
-    break;
-
-  case 12:    // Move Joint A from home out to full range then back to home  
-    command = 0; 
-    if (debug_control > 2) Serial.println(F("Command 12 - Move Joint A from home out to full range then back to home"));
-    IF_A_go_to_home();    
-    IF_A_move_full_range(IF_A_range_full_count);  ///  << Limits movement
-    IF_A_go_to_home();    
-    break;
-
-  case 13:    // Move Joint A to specific angle  
+  case 11:    // Move Joint A to specific angle  
     command = 0; 
     if (debug_control > 2) Serial.println(F("Command 13 - Move Joint A to specific angle"));
     break;
 
-  case 14:    // Move Joint A from home out to full range then back to home  
+  case 12:    // Move Joint A from home out to full range then back to home  
     command = 0; 
     if (debug_control > 2) Serial.println(F("Command 14 - Move Joint A to specific count"));
     IF_A_move_full_range(IF_A_target_count);  ///  << Limits movement
     break;
 
 //   Need  to  make sure home is achieved before using count  IF_A_home_achieved
+
+
+  case 13:    // Move Joint A out to full range
+    command = 0;
+    if (debug_control > 2) Serial.println (F("Command 11 - Move Joint A over full range"));
+    IF_A_move_full_range(IF_A_range_full_count);  ///  << Limits movement
+    break;
+
+  case 14:    // Move Joint A from home out to full range then back to home  
+    command = 0; 
+    if (debug_control > 2) Serial.println(F("Command 12 - Move Joint A from home out to full range then back to home"));
+    IF_A_go_to_home();    
+    IF_A_move_full_range(IF_A_range_full_count);  ///  << Limits movement
+    IF_A_go_to_home();    
+    break;
 
   case 20:    // Home Joint B   
     command = 0;     // Clear the command so that it does not run again 
@@ -366,22 +377,24 @@ void receiveEvent(int rx_byte_count)    //  Raspberry Pie sending to Arduino
 //    Serial.println(length_of_send_data_array);
   }
 
+  Serial.print ("R");
   for (int i = 0; i < rx_byte_count; i++)  {
-//    Serial.print(received_data_array[i]);   //check what you are receiving against an Intel-Hex frame
+    Serial.print(received_data_array[i]);   //check what you are receiving against an Intel-Hex frame
 //    Serial.print ("R");
   }
-//  Serial.println ("|");
+  Serial.println ("|");
 
   if (received_data_array[1] != 0) {
     last_command_received = received_data_array[1];
-//    Serial.print ("Last CMD: ");
-//    Serial.println (last_command_received);
+    command = last_command_received;
+    Serial.print ("Last CMD: ");
+    Serial.println (last_command_received);
   }
 
   // -----------------------------------------------------------------------
   if (received_data_array[1] == 11) {
     int IF_A_angle_target = received_data_array[2];
-//    Serial.print ("Ang A: "); Serial.println (IF_A_angle_target);
+    Serial.print ("Ang A: "); Serial.println (IF_A_angle_target);
   };
 
 // -----------------------------------------------------------------------
@@ -504,7 +517,7 @@ void sendDataEvent()
 //=================================================================================================
 //  IF_A_home_achieved
 //=================================================================================================
-void IF_A_go_to_home(){
+bool IF_A_go_to_home(){
     if (debug_control > 2) Serial.println(F("IF_A_go_to_home ")); 
     
     action_successful = IF_A_drive_motor(IF_A_home_direction, IF_A_slow_speed);
@@ -544,6 +557,7 @@ void IF_A_go_to_home(){
   if (debug_control > 2) { Serial.print(F("IF_A_rotation_counter: "));  Serial.println(IF_A_rotation_counter);}
   IF_A_rotation_counter = 0;
   if (debug_control > 2) Serial.print(F("IF_A_rotation_counter reset to zero: "));
+  return IF_A_home_achieved;
 }
 
 //=================================================================================================
@@ -687,6 +701,9 @@ bool limit_switch_triggered(int _pin){
 }
 
 //=================================================================================================
+//  Keep this routine short to reduce the chance  of missing an edge transition
+//  This function updates the  interface counter:  IF_X_rotation_counter
+
 void IF_A_monitor_encoder(int increment_direction){
   
   IF_A_opt_A_status = digitalRead(IF_A_OPT_A);
@@ -722,6 +739,95 @@ void IF_C_monitor_encoder(int increment_direction){
   IF_C_opt_A_previous_status = IF_C_opt_A_status;
 }
 
+//=================================================================================================
+bool IF_A_move_to_target_Count(int target_count ){
+    bool command_successful = false;
+
+    // Add some range checking of the target value here
+
+    // Log  the command and target  count
+    if (debug_control > 2) {
+      Serial.print(F("IF_A moving to target count: ")); 
+      Serial.println (target_count);
+    }
+
+    // Verify that the joint has been "homed" to make sure counter is  available
+    
+    if (!IF_A_home_achieved){
+      Serial.println(F("Fail: Cannot move to target count because IF_A Not Homed"));
+      return false;
+    }
+  
+    // Determine the direction to move based on current position and target position
+    // Moving toward home makes the position counter get smaller (negative)
+    // Moving away from home (larger number) is positive
+    
+    int delta_count = target_count - IF_A_rotation_counter;  // Target - current count
+
+    // Need to take into consideration that joints have different home directions
+    // Home direction (IF_A_home_direction) is either 1 or 0 
+    
+    int  motion_direction = 0;  //  1 = moving outward , -1 = toward home 
+    if (delta_count > 0){
+        Serial.print (F("Joint to move away from home"));
+        if (IF_A_home_direction == 1){
+          motion_direction = 0;
+        } else {
+          motion_direction = 1;}
+      } else{
+        Serial.print (F("Joint to move toward home"));
+        if (IF_A_home_direction == 0){
+          motion_direction = 1;
+        } else {
+          motion_direction = 0;}
+    }
+
+    // Start the motor moving
+    action_successful = IF_A_drive_motor( motion_direction, IF_A_slow_speed);   // 
+
+    // Monitor for achieving target count, WHILE monitoring timeout or hitting the home limit (unexpectedly)
+
+    bool encoder_limit_not_hit = true;
+    bool encoder_limit_hit = false;
+  
+    unsigned long startMilliseconds = millis();      // Timers for timeout monitoring
+    unsigned long previousMillidisplay = millis();
+
+    while ( encoder_limit_not_hit && IF_A_motor_not_timedout ){
+      IF_A_monitor_encoder(1);  // Increment the counter while going away from home.
+
+      if ( IF_A_rotation_counter >= IF_A_range_full_count) {
+        encoder_limit_hit = true;
+        if (debug_control > 2) Serial.println(F("Encoder A count limit hit"));
+      }
+      
+//      encoder_limit_not_hit = !encoder_limit_hit;   // ?? WHY not set to T or F
+      encoder_limit_not_hit = false;   // ?? WHY not set to T or F
+            
+      currentMillis = millis();
+      if (currentMillis - startMilliseconds > IF_A_motor_timeout_milliseconds) 
+        {
+        IF_A_motor_not_timedout = false;   
+        if (debug_control > 2) Serial.println(F("Limit Switch A not triggered before timeout"));
+        }
+
+      // Print the current encoder count every 500 milliseconds  
+      if (currentMillis - previousMillidisplay > 500) 
+        {
+          previousMillidisplay = currentMillis;
+          if (debug_control > 2) {Serial.print(F("Encoder A: ")); Serial.println(IF_A_rotation_counter); }
+        }
+    }
+
+  //  Stop the motor
+  action_successful = IF_A_drive_motor( ! IF_A_home_direction, 0);
+  if (debug_control > 2) { Serial.print(F("IF_A_rotation_counter: "));  Serial.println(IF_A_rotation_counter); }
+
+  command_successful = encoder_limit_not_hit && IF_A_motor_not_timedout;
+
+  return command_successful;
+}
+//=================================================================================================
 //=================================================================================================
 void IF_A_move_full_range(int encoder_counts_to_move ){
     bool encoder_limit_not_hit = true;
@@ -911,7 +1017,7 @@ void copy_interface_X_parameters_to_interface_(char interface){
 
   switch (interface)
   {
-  case 'A':    // Joint C   
+  case 'A':    // Joint A   
     IF_A_range_full_count           = IF_X_range_full_count;
     IF_A_home_direction             = IF_X_home_direction;             
     IF_A_slow_speed                 = IF_X_slow_speed;                 
@@ -919,7 +1025,7 @@ void copy_interface_X_parameters_to_interface_(char interface){
     IF_A_motor_timeout_milliseconds = IF_A_motor_timeout_milliseconds; 
     break;
 
-  case 'B':    // Joint C   
+  case 'B':    // Joint B   
     IF_B_range_full_count           = IF_X_range_full_count;
     IF_B_home_direction             = IF_X_home_direction;             
     IF_B_slow_speed                 = IF_X_slow_speed;                 
@@ -1001,7 +1107,6 @@ void setup_pin_modes(){
   pinMode(IF_C_OPT_B, INPUT);
 
   pinMode(analog_input_pin_number_to_control_motor, INPUT);
-  
 }
 
 //=================================================================================================
@@ -1033,42 +1138,7 @@ void read_digital_inputs(){
       IF_C_rotation_counter = IF_C_rotation_counter +1;
     }
   }
-  
 }
 //
-//
-////=================================================================================================
-//void set_digital_outputs_high(){
-//  digitalWrite(IF_A_ENABLE_PWM, HIGH);  // HIGH = TBD
-//  digitalWrite(IF_A_DIR,   HIGH);  // HIGH = TBD
-//  digitalWrite(IF_B_ENABLE_PWM, HIGH);  // HIGH = TBD
-//  digitalWrite(IF_B_DIR,   HIGH);  // HIGH = TBD
-////  digitalWrite(IF_C_ENABLE_PWM, HIGH);  // HIGH = TBD
-//  digitalWrite(IF_C_DIR,   HIGH);  // HIGH = TBD
-//}
-//
-////=================================================================================================
-//void set_digital_outputs_low(){
-//  digitalWrite(IF_A_ENABLE_PWM, LOW);  // HIGH = TBD
-//  digitalWrite(IF_A_DIR,   LOW);  // HIGH = TBD
-//  digitalWrite(IF_B_ENABLE_PWM, LOW);  // HIGH = TBD
-//  digitalWrite(IF_B_DIR,   LOW);  // HIGH = TBD
-////  digitalWrite(IF_C_ENABLE_PWM, LOW);  // HIGH = TBD
-////  digitalWrite(IF_C_DIR,   LOW);  // HIGH = TBD
-//}
-
-//
-////=================================================================================================
-//void read_potentiometer(){
-//  analog_input_to_control_motor = analogRead(analog_input_pin_number_to_control_motor)/4;
-////  Serial.print(F("Analog input: "));
-////  Serial.print(F(analog_input_to_control_motor);
-////  Serial.println(F(""));
-//  
-//}
-
-
-//=================================================================================================
-//=================================================================================================
 //=================================================================================================
 //=================================================================================================
