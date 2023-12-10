@@ -1,8 +1,13 @@
+#include <Wire.h>
+#define SLAVE_ADDRESS 0x08
+//############################################
 
 // Dec 10, 2023   Merging Functions and communications
+// On Git
 
 
 //=================================================================================================
+// Hardware constants
 const int IF_A_DIR = 2;           // D02 - Interface A - Direction Control
 const int IF_A_ENABLE_PWM = 3;    // D03 - Interface A - H-Bridge Enable Control
 const int IF_A_LIMIT = 4;         // D04 - Interface A - Limit Switch
@@ -66,7 +71,7 @@ bool IF_C_motor_not_timedout = true;
 
 int  IF_A_motor_timeout_milliseconds = 20000;
 int  IF_B_motor_timeout_milliseconds = 20000;
-int  IF_C_motor_timeout_milliseconds = 25000;
+int  IF_C_motor_timeout_milliseconds = 20000;
 
 
 int  IF_X_range_full_count = 0;
@@ -89,6 +94,63 @@ long interval = 1000;
 unsigned long currentMillis;
 
 int loop_state = 0;
+
+int IF_A_target_count = 0;
+int IF_B_target_count = 0;
+int IF_C_target_count = 0;
+
+bool IF_A_home_achieved = false;
+bool IF_B_home_achieved = false;
+bool IF_C_home_achieved = false;
+
+//=================================================================================================
+// Communication variables
+
+int data_to_echo = 0;
+int received_command = 0;
+int command_response = 0;
+
+const int array_size = 33;
+int received_data_array[array_size];
+int send_data_array[array_size];
+int length_of_send_data_array;
+int last_command_received = 0;
+
+int IF_A_status = 0;   // Unknown = 0,  In Process = 1, Complete = 2
+int IF_B_status = 0;
+int IF_C_status = 0;
+int IF_D_status = 0;
+int IF_E_status = 0;
+int IF_F_status = 0;
+
+int IF_A_count_status = 0;
+int IF_B_count_status = 0;
+int IF_C_count_status = 0;
+int IF_D_count_status = 0;
+int IF_E_count_status = 0;
+int IF_F_count_status = 0;
+
+int IF_A_count_target = 0;
+int IF_B_count_target = 0;
+int IF_C_count_target = 0;
+int IF_D_count_target = 0;
+int IF_E_count_target = 0;
+int IF_F_count_target = 0;
+
+int IF_A_count_difference = 0;
+int IF_B_count_difference = 0;
+int IF_C_count_difference = 0;
+int IF_D_count_difference = 0;
+int IF_E_count_difference = 0;
+int IF_F_count_difference = 0;
+
+int IF_A_angle_target = 0;
+int IF_B_angle_target = 0;
+int IF_C_angle_target = 0;
+int IF_D_angle_target = 0;
+int IF_E_angle_target = 0;
+int IF_F_angle_target = 0;
+
 
 //=================================================================================================
 /*
@@ -159,22 +221,17 @@ The RPI can send a command to stop all motors to stop. This is a high priority c
 
 //=================================================================================================
 void setup() {
+  
+Wire.begin(SLAVE_ADDRESS);
+Wire.onReceive(receiveEvent);
+Wire.onRequest(sendDataEvent);
 
-
-//pinMode(IF_C_ENABLE_PWM, OUTPUT);
-//digitalWrite(IF_C_ENABLE_PWM, LOW);  // HIGH = TBD
-////analogWrite(IF_C_ENABLE_PWM, 0);
+Serial.begin(9600);
+Serial.println(F(""));
+Serial.println(F(">> Restarting "));
 
 setup_monitor_output();
 setup_pin_modes();
-
-//pinMode(IF_A_ENABLE_PWM, OUTPUT);
-//pinMode(IF_B_ENABLE_PWM, OUTPUT);
-//pinMode(IF_C_ENABLE_PWM, OUTPUT);
-//analogWrite(IF_A_ENABLE_PWM, 0);
-//analogWrite(IF_B_ENABLE_PWM, 0);
-//analogWrite(IF_C_ENABLE_PWM, 0);
-
 
 set_interface_X_parameters_to_Joint('F'); copy_interface_X_parameters_to_interface_('A');
 set_interface_X_parameters_to_Joint('F'); copy_interface_X_parameters_to_interface_('B');
@@ -218,6 +275,13 @@ void loop() {
     if (debug_control > 2) Serial.println(F("Command 13 - Move Joint A to specific angle"));
     break;
 
+  case 14:    // Move Joint A from home out to full range then back to home  
+    command = 0; 
+    if (debug_control > 2) Serial.println(F("Command 14 - Move Joint A to specific count"));
+    IF_A_move_full_range(IF_A_target_count);  ///  << Limits movement
+    break;
+
+//   Need  to  make sure home is achieved before using count  IF_A_home_achieved
 
   case 20:    // Home Joint B   
     command = 0;     // Clear the command so that it does not run again 
@@ -284,8 +348,161 @@ void loop() {
 }
 
 //=================================================================================================
+//------------------------------------------
+void receiveEvent(int rx_byte_count)    //  Raspberry Pie sending to Arduino 
+{
+
+  for (int i = 0; i < array_size; i++) {    // Clear out old data
+    received_data_array[i] = 0;
+  }
+
+  for (int i = 0; i < rx_byte_count; i++)  {  // Receive the data and place in array
+    received_data_array[i] = Wire.read();
+  }
+  // Get the byte count for the response
+  if (rx_byte_count > 1) {
+    length_of_send_data_array = received_data_array[rx_byte_count - 1]; //  The last byte is the response size
+//    Serial.print(" Exit RX   Response size: ");
+//    Serial.println(length_of_send_data_array);
+  }
+
+  for (int i = 0; i < rx_byte_count; i++)  {
+//    Serial.print(received_data_array[i]);   //check what you are receiving against an Intel-Hex frame
+//    Serial.print ("R");
+  }
+//  Serial.println ("|");
+
+  if (received_data_array[1] != 0) {
+    last_command_received = received_data_array[1];
+//    Serial.print ("Last CMD: ");
+//    Serial.println (last_command_received);
+  }
+
+  // -----------------------------------------------------------------------
+  if (received_data_array[1] == 11) {
+    int IF_A_angle_target = received_data_array[2];
+//    Serial.print ("Ang A: "); Serial.println (IF_A_angle_target);
+  };
+
+// -----------------------------------------------------------------------
+if (received_data_array[1] == 21) {
+  int IF_B_angle_target = received_data_array[2];
+//  Serial.print ("Ang B: "); Serial.println (IF_A_angle_target);
+};
+
+// -----------------------------------------------------------------------
+if (received_data_array[1] == 31) {
+  int IF_C_angle_target = received_data_array[2];
+//  Serial.print ("Ang C: "); Serial.println (IF_A_angle_target);
+};
+
+// -----------------------------------------------------------------------
+if (received_data_array[1] == 12) {
+  IF_A_count_target = (received_data_array[2] * 256) +  received_data_array[3];
+  Serial.print ("IF_A_count_target: "); Serial.println (IF_A_count_target);
+}
+
+
+if (received_data_array[1] == 22) {
+  IF_B_count_target = (received_data_array[2] * 256) +  received_data_array[3];
+  Serial.print ("IF_B_count_target: "); Serial.println (IF_B_count_target);
+}
+
+if (received_data_array[1] == 32) {
+  IF_C_count_target = (received_data_array[2] * 256) +  received_data_array[3];
+  Serial.print ("IF_C_count_target: "); Serial.println (IF_C_count_target);
+}
+
+// -----------------------------------------------------------------------
+if (last_command_received == 40) {
+  Serial.println ("Req stat");
+}
+
+if (received_data_array[1] == 50) {
+  //    Serial.println ("Requesting all counts");
+}
+
+
+}
+
+//
+//------------------------------------------
+void sendDataEvent()
+{
+  for (int i = 0; i < array_size; i++) {    // Clear out old data
+    send_data_array[i] = 0;
+  }
+
+  send_data_array[0] = 0;
+  send_data_array[1] = 1;
+  send_data_array[2] = 2;
+  send_data_array[3] = 3;
+  send_data_array[4] = 4;
+  send_data_array[5] = 5;
+  send_data_array[6] = 6;
+  //  send_data_array[7] = 7;
+  //  send_data_array[8] = 8;
+  //  send_data_array[9] = 9;
+  //  send_data_array[10] = 10;
+  //  send_data_array[11] = 11;
+  //  send_data_array[12] = 12;
+  //  send_data_array[13] = 13;
+  //  send_data_array[14] = 14;
+  //  send_data_array[15] = 15;
+  //  send_data_array[16] = 16;
+  //  send_data_array[17] = 17;
+  //  send_data_array[18] = 18;
+  //  send_data_array[19] = 19;
+  //  send_data_array[20] = 20;
+
+  if (last_command_received == 11) {
+    send_data_array[length_of_send_data_array - 1] = IF_A_status;
+  }
+
+  if (last_command_received == 12) {
+    send_data_array[length_of_send_data_array - 1] = IF_B_status;
+  }
+
+  if (last_command_received == 13) {
+    send_data_array[length_of_send_data_array - 1] = IF_C_status;
+  }
+
+
+
+  if (last_command_received == 40) {
+    Serial.print(IF_A_status);
+    Serial.print(IF_B_status);
+    Serial.print(IF_C_status);
+    Serial.println("Stat");
+
+    send_data_array[0] = IF_A_status;
+    send_data_array[1] = IF_B_status;
+    send_data_array[2] = IF_C_status;
+
+  }
+
+  if (last_command_received == 50) {
+    send_data_array[0] = (IF_A_count_status >> 8) & 0xff;  //  IF_A_count_status_Low_byte
+    send_data_array[1] = IF_A_count_status % 256;          //  IF_A_count_status_low_byte
+
+    send_data_array[2] = (IF_B_count_status >> 8) & 0xff;  //  IF_A_count_status_Low_byte
+    send_data_array[3] = IF_B_count_status % 256;   //  IF_A_count_status_low_byte
+
+    send_data_array[4] = (IF_C_count_status >> 8) & 0xff;  //  IF_A_count_status_Low_byte
+    send_data_array[5] = IF_C_count_status % 256;   //  IF_A_count_status_low_byte
+  }
+
+  for (int i = 0; i < length_of_send_data_array; i++)
+  {
+    Wire.write(send_data_array[i]);
+  }
+
+}  // end of Send Data Event
+//------------------------------------------
+
 //=================================================================================================
 //=================================================================================================
+//  IF_A_home_achieved
 //=================================================================================================
 void IF_A_go_to_home(){
     if (debug_control > 2) Serial.println(F("IF_A_go_to_home ")); 
@@ -313,6 +530,11 @@ void IF_A_go_to_home(){
         }
 
       limit_switch_status = limit_switch_triggered(IF_A_LIMIT);
+
+      if (limit_switch_status){
+          IF_A_home_achieved = true;
+      }
+        
       if (debug_control > 2) 
         if (limit_switch_status) Serial.println(F("Homing Limit Switch A Detected"));
     }
@@ -350,6 +572,10 @@ void IF_B_go_to_home(){
           if (debug_control > 2) { Serial.print(F("Encoder B: ")); Serial.println(IF_B_rotation_counter);}
         }
 
+      if (limit_switch_status){
+          IF_B_home_achieved = true;
+      }
+        
       limit_switch_status = limit_switch_triggered(IF_B_LIMIT);
       if (debug_control > 2) 
         if (limit_switch_status) Serial.println(F("Homing Limit Switch B Detected"));
@@ -388,6 +614,10 @@ void IF_C_go_to_home(){
           if (debug_control > 2) { Serial.print(F("Encoder C: ")); Serial.println(IF_C_rotation_counter);}
         }
 
+      if (limit_switch_status){
+          IF_C_home_achieved = true;
+      }
+        
       limit_switch_status = limit_switch_triggered(IF_C_LIMIT);
       if (debug_control > 2) 
         if (limit_switch_status) Serial.println(F("Homing Limit Switch C Detected"));
