@@ -119,37 +119,18 @@ int last_command_received = 0;
 int IF_A_status = 0;   // Current  status of joint moving to target = Unknown = 0,  In Process = 1, Complete = 2
 int IF_B_status = 0;
 int IF_C_status = 0;
-//int IF_D_status = 0;
-//int IF_E_status = 0;
-//int IF_F_status = 0;
-
-int IF_A_count_status = 0;
-int IF_B_count_status = 0;
-int IF_C_count_status = 0;
-//int IF_D_count_status = 0;
-//int IF_E_count_status = 0;
-//int IF_F_count_status = 0;
 
 int IF_A_count_target = 0;
 int IF_B_count_target = 0;
 int IF_C_count_target = 0;
-//int IF_D_count_target = 0;
-//int IF_E_count_target = 0;
-//int IF_F_count_target = 0;
 
 int IF_A_count_difference = 0;
 int IF_B_count_difference = 0;
 int IF_C_count_difference = 0;
-//int IF_D_count_difference = 0;
-//int IF_E_count_difference = 0;
-//int IF_F_count_difference = 0;
 
 int IF_A_angle_target = 0;
 int IF_B_angle_target = 0;
 int IF_C_angle_target = 0;
-//int IF_D_angle_target = 0;
-//int IF_E_angle_target = 0;
-//int IF_F_angle_target = 0;
 
 
 //=================================================================================================
@@ -351,7 +332,25 @@ void loop() {
     
   case 50:  // Get Interface Encoder Counts
     command = 0;
-    if (debug_control > 2) Serial.println(F("Command 50 - Get Status flags from all 3 Interaces"));
+    if (debug_control > 2) Serial.println(F("Command 50 - Get Counts from all 3 Interaces"));
+    break;
+
+  case 19: 
+    command = 0;
+    Serial.println (">> Special - Move interface A away from home for 1 second");
+    unsigned long startMilliseconds = millis();
+    IF_A_motor_not_timedout = true;  
+    
+    while (IF_A_motor_not_timedout ){
+      action_successful = IF_A_drive_motor(! IF_A_home_direction, IF_A_slow_speed);  // Stop the motor
+      IF_A_monitor_encoder(-1);  // Decrement the counter while homing
+      currentMillis = millis();
+      if (currentMillis - startMilliseconds > 1000) 
+        {
+        IF_A_motor_not_timedout = false;   
+        }
+    }
+    action_successful = IF_A_drive_motor(IF_A_home_direction, 0);  // Stop the motor
     break;
 
 
@@ -410,42 +409,45 @@ void receiveEvent(int rx_byte_count)    //  Raspberry Pie sending to Arduino
   };
 
 // -----------------------------------------------------------------------
-if (received_data_array[1] == 21) {
-  int IF_B_angle_target = received_data_array[2];
-//  Serial.print ("Ang B: "); Serial.println (IF_A_angle_target);
-};
+  if (received_data_array[1] == 21) {
+    int IF_B_angle_target = received_data_array[2];
+    //  Serial.print ("Ang B: "); Serial.println (IF_A_angle_target);
+  };
 
 // -----------------------------------------------------------------------
-if (received_data_array[1] == 31) {
-  int IF_C_angle_target = received_data_array[2];
-//  Serial.print ("Ang C: "); Serial.println (IF_A_angle_target);
-};
+  if (received_data_array[1] == 31) {
+    int IF_C_angle_target = received_data_array[2];
+    //  Serial.print ("Ang C: "); Serial.println (IF_A_angle_target);
+  };
 
 // -----------------------------------------------------------------------
-if (received_data_array[1] == 12) {
-  IF_A_count_target = (received_data_array[2] * 256) +  received_data_array[3];
-  Serial.print ("IF_A_count_target: "); Serial.println (IF_A_count_target);
-}
+  if (received_data_array[1] == 12) {
+    IF_A_count_target = (received_data_array[2] * 256) +  received_data_array[3];
+    Serial.print ("IF_A_count_target: "); Serial.println (IF_A_count_target);
+    };
 
+  if (received_data_array[1] == 22) {
+    IF_B_count_target = (received_data_array[2] * 256) +  received_data_array[3];
+    Serial.print ("IF_B_count_target: "); Serial.println (IF_B_count_target);
+    };
 
-if (received_data_array[1] == 22) {
-  IF_B_count_target = (received_data_array[2] * 256) +  received_data_array[3];
-  Serial.print ("IF_B_count_target: "); Serial.println (IF_B_count_target);
-}
-
-if (received_data_array[1] == 32) {
-  IF_C_count_target = (received_data_array[2] * 256) +  received_data_array[3];
-  Serial.print ("IF_C_count_target: "); Serial.println (IF_C_count_target);
-}
+  if (received_data_array[1] == 32) {
+    IF_C_count_target = (received_data_array[2] * 256) +  received_data_array[3];
+    Serial.print ("IF_C_count_target: "); Serial.println (IF_C_count_target);
+  }
 
 // -----------------------------------------------------------------------
-if (last_command_received == 40) {
-  Serial.println ("Req stat");
-}
+  if (last_command_received == 40) {
+    Serial.println ("Req stat");
+  }
 
-if (received_data_array[1] == 50) {
-  //    Serial.println ("Requesting all counts");
-}
+  if (received_data_array[1] == 50) {
+    //    Serial.println ("Requesting all counts");
+  }
+
+//  if (received_data_array[1] == 19) {
+//    //    Serial.println ("Moving motor away from home");
+//  }
 
 
 }
@@ -498,7 +500,7 @@ void sendDataEvent()
     Serial.print(IF_A_status);
     Serial.print(IF_B_status);
     Serial.print(IF_C_status);
-    Serial.println("Stat-40");
+    Serial.println("CMD-40 Stat");
 
     send_data_array[0] = IF_A_status;
     send_data_array[1] = IF_B_status;
@@ -507,14 +509,15 @@ void sendDataEvent()
   }
 
   if (last_command_received == 50) {
-    send_data_array[0] = (IF_A_count_status >> 8) & 0xff;  //  IF_A_count_status_Low_byte
-    send_data_array[1] = IF_A_count_status % 256;          //  IF_A_count_status_low_byte
+    send_data_array[0] = (IF_A_rotation_counter >> 8) & 0xff;  
+    send_data_array[1] = IF_A_rotation_counter % 256;          
 
-    send_data_array[2] = (IF_B_count_status >> 8) & 0xff;  //  IF_A_count_status_Low_byte
-    send_data_array[3] = IF_B_count_status % 256;   //  IF_A_count_status_low_byte
+    send_data_array[2] = (IF_B_rotation_counter >> 8) & 0xff;  
+    send_data_array[3] = IF_B_rotation_counter % 256;   
 
-    send_data_array[4] = (IF_C_count_status >> 8) & 0xff;  //  IF_A_count_status_Low_byte
-    send_data_array[5] = IF_C_count_status % 256;   //  IF_A_count_status_low_byte
+    send_data_array[4] = (IF_C_rotation_counter >> 8) & 0xff;  
+    send_data_array[5] = IF_C_rotation_counter % 256;   
+    Serial.println("CMD-50 counts");
   }
 
   for (int i = 0; i < length_of_send_data_array; i++)
@@ -538,6 +541,7 @@ bool IF_A_go_to_home(){
     unsigned long previousMillidisplay = millis();
 
     bool limit_switch_status = limit_switch_triggered(IF_A_LIMIT);   // Returns True when limit hit
+    IF_A_motor_not_timedout = true;
         
     while (! limit_switch_status && IF_A_motor_not_timedout ){
       IF_A_monitor_encoder(-1);  // Decrement the counter while homing
@@ -800,9 +804,9 @@ bool IF_A_move_to_target_Count(int target_count ){
       } else{
         Serial.println (F("Joint to move toward home"));
         if (IF_A_home_direction == 0){
-          motion_direction = 1;
+          motion_direction = 0;
         } else {
-          motion_direction = 0;}
+          motion_direction = 1;}
     }
 
     // Start the motor moving
