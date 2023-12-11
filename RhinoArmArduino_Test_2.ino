@@ -220,11 +220,6 @@ set_interface_X_parameters_to_Joint('F'); copy_interface_X_parameters_to_interfa
 set_interface_X_parameters_to_Joint('F'); copy_interface_X_parameters_to_interface_('C');
 print_interface_parameters();
 
-// Temporary test commands
-//command = 30;    // Home
-//command = 31;    // Out to max range
-command = 0; // Out then home
-//command = 10;
 }
 
 
@@ -258,9 +253,6 @@ void loop() {
     IF_A_move_to_target_Count(IF_A_count_target);  ///  << Limits movement
     break;
 
-//   Need  to  make sure home is achieved before using count  IF_A_home_achieved
-
-
   case 13:    // Move Joint A out to full range
     command = 0;
     if (debug_control > 2) Serial.println (F("Command 11 - Move Joint A over full range"));
@@ -275,56 +267,122 @@ void loop() {
     IF_A_go_to_home();    
     break;
 
+// - IF-B
   case 20:    // Home Joint B   
     command = 0;     // Clear the command so that it does not run again 
-        if (debug_control > 2) Serial.println(F("Command 20 - Home Joint B"));
+        if (debug_control > 2) Serial.println (F("Command 20 - Home Joint B"));
     IF_B_go_to_home();
     break;
 
-  case 21:    // Move Joint B out to full range
+  case 21:    // Move Joint B to specific angle  
+    command = 0; 
+    if (debug_control > 2) Serial.println(F("Command 21 - Move Joint B to specific angle"));
+    break;
+
+  case 22:    // Move Joint B from to a specific count
+    command = 0; 
+    if (debug_control > 2) Serial.println(F("Command 22 - Move Joint B to specific count"));
+    IF_B_move_to_target_Count(IF_B_count_target);  ///  << Limits movement
+    break;
+
+  case 23:    // Move Joint B out to full range
     command = 0;
-    if (debug_control > 2) Serial.println (F("Command 21 - Move Joint B over full range"));
+    if (debug_control > 2) Serial.println (F("Command 23 - Move Joint B over full range"));
     IF_B_move_full_range(IF_B_range_full_count);  ///  << Limits movement
     break;
 
-  case 22:    // Move Joint B from home out to full range then back to home  
+  case 24:    // Move Joint B from home out to full range then back to home  
     command = 0; 
-    if (debug_control > 2) Serial.println(F("Command 22 - Move Joint B from home out to full range then back to home"));
+    if (debug_control > 2) Serial.println(F("Command 24 - Move Joint B from home out to full range then back to home"));
     IF_B_go_to_home();    
     IF_B_move_full_range(IF_B_range_full_count);  ///  << Limits movement
     IF_B_go_to_home();    
     break;
 
-  case 23:    // Move Joint C to specific angle  
-    command = 0; 
-    if (debug_control > 2) Serial.println(F("Command 23 - Move Joint B to specific angle"));
-    break;
- 
+
+// - IF-C
   case 30:    // Home Joint C   
     command = 0;     // Clear the command so that it does not run again 
         if (debug_control > 2) Serial.println (F("Command 30 - Home Joint C"));
     IF_C_go_to_home();
     break;
 
-  case 31:    // Move Joint C out to full range
+  case 31:    // Move Joint C to specific angle  
+    command = 0; 
+    if (debug_control > 2) Serial.println(F("Command 31 - Move Joint C to specific angle"));
+    break;
+
+  case 32:    // Move Joint C from to a specific count
+    command = 0; 
+    if (debug_control > 2) Serial.println(F("Command 32 - Move Joint C to specific count"));
+    IF_C_move_to_target_Count(IF_C_count_target);  ///  << Limits movement
+    break;
+
+  case 33:    // Move Joint C out to full range
     command = 0;
-    if (debug_control > 2) Serial.println(F("Command 31 - Move Joint C over full range"));
+    if (debug_control > 2) Serial.println (F("Command 33 - Move Joint C over full range"));
     IF_C_move_full_range(IF_C_range_full_count);  ///  << Limits movement
     break;
 
-  case 32:    // Move Joint C from home out to full range then back to home  
+  case 34:    // Move Joint C from home out to full range then back to home  
     command = 0; 
-    if (debug_control > 2) Serial.println(F("Command 32 - Move Joint C from home out to full range then back to home"));
+    if (debug_control > 2) Serial.println(F("Command 34 - Move Joint C from home out to full range then back to home"));
     IF_C_go_to_home();    
     IF_C_move_full_range(IF_C_range_full_count);  ///  << Limits movement
     IF_C_go_to_home();    
     break;
 
-  case 33:    // Move Joint C to specific angle  
-    command = 0; 
-    if (debug_control > 2) Serial.println(F("Command 33 - Move Joint C to specific angle"));
-    break;
 
+//  case 20:    // Home Joint B   
+//    command = 0;     // Clear the command so that it does not run again 
+//        if (debug_control > 2) Serial.println(F("Command 20 - Home Joint B"));
+//    IF_B_go_to_home();
+//    break;
+//
+//  case 21:    // Move Joint B out to full range
+//    command = 0;
+//    if (debug_control > 2) Serial.println (F("Command 21 - Move Joint B over full range"));
+//    IF_B_move_full_range(IF_B_range_full_count);  ///  << Limits movement
+//    break;
+//
+//  case 22:    // Move Joint B from home out to full range then back to home  
+//    command = 0; 
+//    if (debug_control > 2) Serial.println(F("Command 22 - Move Joint B from home out to full range then back to home"));
+//    IF_B_go_to_home();    
+//    IF_B_move_full_range(IF_B_range_full_count);  ///  << Limits movement
+//    IF_B_go_to_home();    
+//    break;
+//
+//  case 23:    // Move Joint C to specific angle  
+//    command = 0; 
+//    if (debug_control > 2) Serial.println(F("Command 23 - Move Joint B to specific angle"));
+//    break;
+// 
+//  case 30:    // Home Joint C   
+//    command = 0;     // Clear the command so that it does not run again 
+//        if (debug_control > 2) Serial.println (F("Command 30 - Home Joint C"));
+//    IF_C_go_to_home();
+//    break;
+//
+//  case 31:    // Move Joint C out to full range
+//    command = 0;
+//    if (debug_control > 2) Serial.println(F("Command 31 - Move Joint C over full range"));
+//    IF_C_move_full_range(IF_C_range_full_count);  ///  << Limits movement
+//    break;
+//
+//  case 32:    // Move Joint C from home out to full range then back to home  
+//    command = 0; 
+//    if (debug_control > 2) Serial.println(F("Command 32 - Move Joint C from home out to full range then back to home"));
+//    IF_C_go_to_home();    
+//    IF_C_move_full_range(IF_C_range_full_count);  ///  << Limits movement
+//    IF_C_go_to_home();    
+//    break;
+//
+//  case 33:    // Move Joint C to specific angle  
+//    command = 0; 
+//    if (debug_control > 2) Serial.println(F("Command 33 - Move Joint C to specific angle"));
+//    break;
+//
   case 40:  // Get Status flags
     command = 0;
     if (debug_control > 2) Serial.println(F("Command 40 - Get Status flags from all 3 Interaces"));
@@ -444,12 +502,6 @@ void receiveEvent(int rx_byte_count)    //  Raspberry Pie sending to Arduino
   if (received_data_array[1] == 50) {
     //    Serial.println ("Requesting all counts");
   }
-
-//  if (received_data_array[1] == 19) {
-//    //    Serial.println ("Moving motor away from home");
-//  }
-
-
 }
 
 //
@@ -586,15 +638,18 @@ bool IF_A_go_to_home(){
 }
 
 //=================================================================================================
-void IF_B_go_to_home(){
+//void IF_B_go_to_home(){
+
+bool IF_B_go_to_home(){
     if (debug_control > 2) Serial.println(F("IF_B_go_to_home ")); 
     
-    action_successful = IF_B_drive_motor(  IF_B_home_direction, IF_B_slow_speed);
+    action_successful = IF_B_drive_motor(IF_B_home_direction, IF_B_slow_speed);
 
     unsigned long startMilliseconds = millis();
     unsigned long previousMillidisplay = millis();
 
     bool limit_switch_status = limit_switch_triggered(IF_B_LIMIT);   // Returns True when limit hit
+    IF_B_motor_not_timedout = true;
         
     while (! limit_switch_status && IF_B_motor_not_timedout ){
       IF_B_monitor_encoder(-1);  // Decrement the counter while homing
@@ -611,32 +666,87 @@ void IF_B_go_to_home(){
           if (debug_control > 2) { Serial.print(F("Encoder B: ")); Serial.println(IF_B_rotation_counter);}
         }
 
+      limit_switch_status = limit_switch_triggered(IF_B_LIMIT);
+
       if (limit_switch_status){
           IF_B_home_achieved = true;
+          IF_B_status = 2;
+          Serial.println ("HOME ACHIEVED");
       }
         
-      limit_switch_status = limit_switch_triggered(IF_B_LIMIT);
       if (debug_control > 2) 
         if (limit_switch_status) Serial.println(F("Homing Limit Switch B Detected"));
+        
+    }  // (end of WHILE)
+
+    if (limit_switch_status){
+        IF_B_home_achieved = true;
+        IF_B_status = 2;
+        Serial.println ("HOME ACHIEVED");
     }
 
   action_successful = IF_B_drive_motor(IF_B_home_direction, 0);  // Stop the motor
   
   if (debug_control > 2) { Serial.print(F("IF_B_rotation_counter: "));  Serial.println(IF_B_rotation_counter);}
-  IF_B_rotation_counter = 0;
-  if (debug_control > 2) Serial.print(F("IF_B_rotation_counter reset to zero "));
+  IF_A_rotation_counter = 0;
+  if (debug_control > 2) Serial.print(F("IF_B_rotation_counter reset to zero: "));
+  return IF_B_home_achieved;
 }
 
+//void IF_B_go_to_home(){
+//    if (debug_control > 2) Serial.println(F("IF_B_go_to_home ")); 
+//    
+//    action_successful = IF_B_drive_motor(  IF_B_home_direction, IF_B_slow_speed);
+//
+//    unsigned long startMilliseconds = millis();
+//    unsigned long previousMillidisplay = millis();
+//
+//    bool limit_switch_status = limit_switch_triggered(IF_B_LIMIT);   // Returns True when limit hit
+//        
+//    while (! limit_switch_status && IF_B_motor_not_timedout ){
+//      IF_B_monitor_encoder(-1);  // Decrement the counter while homing
+//      currentMillis = millis();
+//      if (currentMillis - startMilliseconds > IF_B_motor_timeout_milliseconds) 
+//        {
+//        IF_B_motor_not_timedout = false;   
+//        if (debug_control > 2) Serial.println(F("Limit Switch B not triggered before timeout"));
+//        }
+//        
+//      if (currentMillis - previousMillidisplay > 500) 
+//        {
+//          previousMillidisplay = currentMillis;
+//          if (debug_control > 2) { Serial.print(F("Encoder B: ")); Serial.println(IF_B_rotation_counter);}
+//        }
+//
+//      if (limit_switch_status){
+//          IF_B_home_achieved = true;
+//      }
+//        
+//      limit_switch_status = limit_switch_triggered(IF_B_LIMIT);
+//      if (debug_control > 2) 
+//        if (limit_switch_status) Serial.println(F("Homing Limit Switch B Detected"));
+//    }
+//
+//  action_successful = IF_B_drive_motor(IF_B_home_direction, 0);  // Stop the motor
+//  
+//  if (debug_control > 2) { Serial.print(F("IF_B_rotation_counter: "));  Serial.println(IF_B_rotation_counter);}
+//  IF_B_rotation_counter = 0;
+//  if (debug_control > 2) Serial.print(F("IF_B_rotation_counter reset to zero "));
+//}
+
 //=================================================================================================
-void IF_C_go_to_home(){
+//void IF_C_go_to_home(){
+
+bool IF_C_go_to_home(){
     if (debug_control > 2) Serial.println(F("IF_C_go_to_home ")); 
     
-    action_successful = IF_C_drive_motor(  IF_C_home_direction, IF_C_slow_speed);
+    action_successful = IF_C_drive_motor(IF_C_home_direction, IF_C_slow_speed);
 
     unsigned long startMilliseconds = millis();
     unsigned long previousMillidisplay = millis();
 
     bool limit_switch_status = limit_switch_triggered(IF_C_LIMIT);   // Returns True when limit hit
+    IF_C_motor_not_timedout = true;
         
     while (! limit_switch_status && IF_C_motor_not_timedout ){
       IF_C_monitor_encoder(-1);  // Decrement the counter while homing
@@ -653,21 +763,74 @@ void IF_C_go_to_home(){
           if (debug_control > 2) { Serial.print(F("Encoder C: ")); Serial.println(IF_C_rotation_counter);}
         }
 
+      limit_switch_status = limit_switch_triggered(IF_C_LIMIT);
+
       if (limit_switch_status){
           IF_C_home_achieved = true;
+          IF_C_status = 2;
+          Serial.println ("HOME ACHIEVED");
       }
         
-      limit_switch_status = limit_switch_triggered(IF_C_LIMIT);
       if (debug_control > 2) 
         if (limit_switch_status) Serial.println(F("Homing Limit Switch C Detected"));
+        
+    }  // (end of WHILE)
+
+    if (limit_switch_status){
+        IF_C_home_achieved = true;
+        IF_C_status = 2;
+        Serial.println ("HOME ACHIEVED");
     }
 
   action_successful = IF_C_drive_motor(IF_C_home_direction, 0);  // Stop the motor
   
   if (debug_control > 2) { Serial.print(F("IF_C_rotation_counter: "));  Serial.println(IF_C_rotation_counter);}
   IF_C_rotation_counter = 0;
-  if (debug_control > 2) Serial.print(F("IF_C_rotation_counter reset to zero "));
+  if (debug_control > 2) Serial.print(F("IF_C_rotation_counter reset to zero: "));
+  return IF_C_home_achieved;
 }
+
+
+//void IF_C_go_to_home(){
+//    if (debug_control > 2) Serial.println(F("IF_C_go_to_home ")); 
+//    
+//    action_successful = IF_C_drive_motor(  IF_C_home_direction, IF_C_slow_speed);
+//
+//    unsigned long startMilliseconds = millis();
+//    unsigned long previousMillidisplay = millis();
+//
+//    bool limit_switch_status = limit_switch_triggered(IF_C_LIMIT);   // Returns True when limit hit
+//        
+//    while (! limit_switch_status && IF_C_motor_not_timedout ){
+//      IF_C_monitor_encoder(-1);  // Decrement the counter while homing
+//      currentMillis = millis();
+//      if (currentMillis - startMilliseconds > IF_C_motor_timeout_milliseconds) 
+//        {
+//        IF_C_motor_not_timedout = false;   
+//        if (debug_control > 2) Serial.println(F("Limit Switch C not triggered before timeout"));
+//        }
+//        
+//      if (currentMillis - previousMillidisplay > 500) 
+//        {
+//          previousMillidisplay = currentMillis;
+//          if (debug_control > 2) { Serial.print(F("Encoder C: ")); Serial.println(IF_C_rotation_counter);}
+//        }
+//
+//      if (limit_switch_status){
+//          IF_C_home_achieved = true;
+//      }
+//        
+//      limit_switch_status = limit_switch_triggered(IF_C_LIMIT);
+//      if (debug_control > 2) 
+//        if (limit_switch_status) Serial.println(F("Homing Limit Switch C Detected"));
+//    }
+//
+//  action_successful = IF_C_drive_motor(IF_C_home_direction, 0);  // Stop the motor
+//  
+//  if (debug_control > 2) { Serial.print(F("IF_C_rotation_counter: "));  Serial.println(IF_C_rotation_counter);}
+//  IF_C_rotation_counter = 0;
+//  if (debug_control > 2) Serial.print(F("IF_C_rotation_counter reset to zero "));
+//}
 
 //=================================================================================================
 
@@ -795,14 +958,18 @@ bool IF_A_move_to_target_Count(int target_count ){
     // Home direction (IF_A_home_direction) is either 1 or 0 
     
     int  motion_direction = 0;  //  1 = moving outward , -1 = toward home 
+    int  encoder_direction = 0; //  Used to determine if encoder should increment or decrement
+    
     if (delta_count > 0){
         Serial.println (F("Joint to move away from home"));
+        encoder_direction = 1;
         if (IF_A_home_direction == 1){
           motion_direction = 0;
         } else {
           motion_direction = 1;}
       } else{
         Serial.println (F("Joint to move toward home"));
+        encoder_direction = -1;
         if (IF_A_home_direction == 0){
           motion_direction = 0;
         } else {
@@ -823,7 +990,7 @@ bool IF_A_move_to_target_Count(int target_count ){
     unsigned long previousMillidisplay = millis();
 
     while ( encoder_limit_not_hit && IF_A_motor_not_timedout & IF_A_motor_not_at_target_count ){
-      IF_A_monitor_encoder(1);  // Increment the counter while going away from home.
+      IF_A_monitor_encoder(encoder_direction);  // Increment the counter while going away from home.
                               //  This function updates the  interface counter:  IF_X_rotation_counter
 
       // Check to see if we have reached the target
@@ -864,6 +1031,220 @@ bool IF_A_move_to_target_Count(int target_count ){
 
   return command_successful;
 }
+
+//=================================================================================================
+//bool IF_B_move_to_target_Count(int target_count ){
+bool IF_B_move_to_target_Count(int target_count ){
+    bool command_successful = false;
+
+    // Add some range checking of the target value here
+
+    // Log  the command and target  count
+    if (debug_control > 2) {
+      Serial.print(F("IF_B moving to target count: ")); 
+      Serial.println (target_count);
+      Serial.print(F("IF_B IF_B_home_achieved: ")); 
+      Serial.println (IF_B_home_achieved);
+    }
+
+    // Verify that the joint has been "homed" to make sure counter is  available
+    
+    if (!IF_B_home_achieved){
+      Serial.println(F("Fail: Cannot move to target count because IF_B Not Homed"));
+      return false;
+    }
+  
+    // Determine the direction to move based on current position and target position
+    // Moving toward home makes the position counter get smaller (negative)
+    // Moving away from home (larger number) is positive
+    
+    int delta_count = target_count - IF_B_rotation_counter;  // Target - current count
+
+    // Need to take into consideration that joints have different home directions
+    // Home direction (IF_B_home_direction) is either 1 or 0 
+    
+    int  motion_direction = 0;  //  1 = moving outward , -1 = toward home 
+    int  encoder_direction = 0; //  Used to determine if encoder should increment or decrement
+    
+    if (delta_count > 0){
+        Serial.println (F("Joint to move away from home"));
+        encoder_direction = 1;
+        if (IF_B_home_direction == 1){
+          motion_direction = 0;
+        } else {
+          motion_direction = 1;}
+      } else{
+        Serial.println (F("Joint to move toward home"));
+        encoder_direction = -1;
+        if (IF_B_home_direction == 0){
+          motion_direction = 0;
+        } else {
+          motion_direction = 1;}
+    }
+
+    // Start the motor moving
+    action_successful = IF_B_drive_motor( motion_direction, IF_B_slow_speed);   // 
+
+    // Monitor for achieving target count, WHILE monitoring timeout or hitting the home limit (unexpectedly)
+
+    bool encoder_limit_not_hit = true;
+    bool encoder_limit_hit = false;
+    bool IF_B_motor_not_at_target_count = true;
+    int  target_count_window_size = 3;
+  
+    unsigned long startMilliseconds = millis();      // Timers for timeout monitoring
+    unsigned long previousMillidisplay = millis();
+
+    while ( encoder_limit_not_hit && IF_B_motor_not_timedout & IF_B_motor_not_at_target_count ){
+      IF_B_monitor_encoder(encoder_direction);  // Increment the counter while going away from home.
+                              //  This function updates the  interface counter:  IF_X_rotation_counter
+
+      // Check to see if we have reached the target
+      delta_count = target_count - IF_B_rotation_counter;  // Target - current count
+      if ( abs(delta_count) < target_count_window_size ){
+        IF_B_motor_not_at_target_count = false;
+      }
+        
+      // Check to see if we have reached the counter limit for this specific Joint
+      if ( IF_B_rotation_counter >= IF_B_range_full_count) {
+        encoder_limit_hit = true;
+        if (debug_control > 2) Serial.println(F("Encoder B count limit hit"));
+      }
+      
+      encoder_limit_not_hit = !encoder_limit_hit;   // ?? WHY not set to T or F
+
+      // Check to see if we have reached the time limit for this specific Joint
+      currentMillis = millis();
+      if (currentMillis - startMilliseconds > IF_B_motor_timeout_milliseconds) 
+        {
+        IF_B_motor_not_timedout = false;   
+        if (debug_control > 2) Serial.println(F("Limit Switch B not triggered before timeout"));
+        }
+
+      // Print the current encoder count every 500 milliseconds  
+      if (currentMillis - previousMillidisplay > 100) 
+        {
+          previousMillidisplay = currentMillis;
+          if (debug_control > 2) {Serial.print(F("Encoder B: ")); Serial.println(IF_B_rotation_counter); }
+        }
+    }
+
+  //  Stop the motor
+  action_successful = IF_B_drive_motor( ! IF_B_home_direction, 0);
+  if (debug_control > 2) { Serial.print(F("IF_B_rotation_counter: "));  Serial.println(IF_B_rotation_counter); }
+
+  command_successful = encoder_limit_not_hit && IF_B_motor_not_timedout;
+
+  return command_successful;
+}
+
+//=================================================================================================
+// bool IF_C_move_to_target_Count(int target_count ){
+bool IF_C_move_to_target_Count(int target_count ){
+    bool command_successful = false;
+
+    // Add some range checking of the target value here
+
+    // Log  the command and target  count
+    if (debug_control > 2) {
+      Serial.print(F("IF_C moving to target count: ")); 
+      Serial.println (target_count);
+      Serial.print(F("IF_C IF_C_home_achieved: ")); 
+      Serial.println (IF_C_home_achieved);
+    }
+
+    // Verify that the joint has been "homed" to make sure counter is  available
+    
+    if (!IF_C_home_achieved){
+      Serial.println(F("Fail: Cannot move to target count because IF_C Not Homed"));
+      return false;
+    }
+  
+    // Determine the direction to move based on current position and target position
+    // Moving toward home makes the position counter get smaller (negative)
+    // Moving away from home (larger number) is positive
+    
+    int delta_count = target_count - IF_C_rotation_counter;  // Target - current count
+
+    // Need to take into consideration that joints have different home directions
+    // Home direction (IF_C_home_direction) is either 1 or 0 
+    
+    int  motion_direction = 0;  //  1 = moving outward , -1 = toward home 
+    int  encoder_direction = 0; //  Used to determine if encoder should increment or decrement
+    
+    if (delta_count > 0){
+        Serial.println (F("Joint to move away from home"));
+        encoder_direction = 1;
+        if (IF_C_home_direction == 1){
+          motion_direction = 0;
+        } else {
+          motion_direction = 1;}
+      } else{
+        Serial.println (F("Joint to move toward home"));
+        encoder_direction = -1;
+        if (IF_C_home_direction == 0){
+          motion_direction = 0;
+        } else {
+          motion_direction = 1;}
+    }
+
+    // Start the motor moving
+    action_successful = IF_C_drive_motor( motion_direction, IF_C_slow_speed);   // 
+
+    // Monitor for achieving target count, WHILE monitoring timeout or hitting the home limit (unexpectedly)
+
+    bool encoder_limit_not_hit = true;
+    bool encoder_limit_hit = false;
+    bool IF_C_motor_not_at_target_count = true;
+    int  target_count_window_size = 3;
+  
+    unsigned long startMilliseconds = millis();      // Timers for timeout monitoring
+    unsigned long previousMillidisplay = millis();
+
+    while ( encoder_limit_not_hit && IF_C_motor_not_timedout & IF_C_motor_not_at_target_count ){
+      IF_C_monitor_encoder(encoder_direction);  // Increment the counter while going away from home.
+                              //  This function updates the  interface counter:  IF_X_rotation_counter
+
+      // Check to see if we have reached the target
+      delta_count = target_count - IF_C_rotation_counter;  // Target - current count
+      if ( abs(delta_count) < target_count_window_size ){
+        IF_C_motor_not_at_target_count = false;
+      }
+        
+      // Check to see if we have reached the counter limit for this specific Joint
+      if ( IF_C_rotation_counter >= IF_C_range_full_count) {
+        encoder_limit_hit = true;
+        if (debug_control > 2) Serial.println(F("Encoder C count limit hit"));
+      }
+      
+      encoder_limit_not_hit = !encoder_limit_hit;   // ?? WHY not set to T or F
+
+      // Check to see if we have reached the time limit for this specific Joint
+      currentMillis = millis();
+      if (currentMillis - startMilliseconds > IF_C_motor_timeout_milliseconds) 
+        {
+        IF_C_motor_not_timedout = false;   
+        if (debug_control > 2) Serial.println(F("Limit Switch C not triggered before timeout"));
+        }
+
+      // Print the current encoder count every 500 milliseconds  
+      if (currentMillis - previousMillidisplay > 100) 
+        {
+          previousMillidisplay = currentMillis;
+          if (debug_control > 2) {Serial.print(F("Encoder C: ")); Serial.println(IF_C_rotation_counter); }
+        }
+    }
+
+  //  Stop the motor
+  action_successful = IF_C_drive_motor( ! IF_C_home_direction, 0);
+  if (debug_control > 2) { Serial.print(F("IF_C_rotation_counter: "));  Serial.println(IF_C_rotation_counter); }
+
+  command_successful = encoder_limit_not_hit && IF_C_motor_not_timedout;
+
+  return command_successful;
+}
+
+
 //=================================================================================================
 //=================================================================================================
 void IF_A_move_full_range(int encoder_counts_to_move ){
