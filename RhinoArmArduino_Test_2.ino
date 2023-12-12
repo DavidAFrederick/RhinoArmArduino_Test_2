@@ -3,7 +3,7 @@
 //############################################
 
 // Dec 10, 2023   Interface A working - Arduino
-// On Git
+// On Git      || Near line 212 for interface to joint definition
 
 
 //=================================================================================================
@@ -132,6 +132,7 @@ int IF_A_angle_target = 0;
 int IF_B_angle_target = 0;
 int IF_C_angle_target = 0;
 
+unsigned long startMilliseconds = 0;
 
 //=================================================================================================
 /*
@@ -215,10 +216,18 @@ setup_monitor_output();
 setup_pin_modes();
 
 // Identify which Robot Arm Joint the Arduino interface is controlling
-set_interface_X_parameters_to_Joint('F'); copy_interface_X_parameters_to_interface_('A');
-set_interface_X_parameters_to_Joint('F'); copy_interface_X_parameters_to_interface_('B');
+set_interface_X_parameters_to_Joint('D'); copy_interface_X_parameters_to_interface_('A');
+set_interface_X_parameters_to_Joint('E'); copy_interface_X_parameters_to_interface_('B');
 set_interface_X_parameters_to_Joint('F'); copy_interface_X_parameters_to_interface_('C');
 print_interface_parameters();
+
+//Joint A - Gripper
+//Joint B - Wrist Rotation
+//Joint C - Wrist Flex
+//Joint D - Elbow
+//Joint E - Shoulder
+//Joint F - Waist
+
 
 }
 
@@ -232,6 +241,10 @@ print_interface_parameters();
 //  NEED TO PREVENT NEW COMMAND FROM STARTING PRIOR COMPLETING CURRENT COMMAND
 //=================================================================================================
 void loop() {
+
+  if (command == 19){
+    Serial.println ("x9 command received");
+  }
 
   switch (command)
   {
@@ -332,57 +345,6 @@ void loop() {
     IF_C_go_to_home();    
     break;
 
-
-//  case 20:    // Home Joint B   
-//    command = 0;     // Clear the command so that it does not run again 
-//        if (debug_control > 2) Serial.println(F("Command 20 - Home Joint B"));
-//    IF_B_go_to_home();
-//    break;
-//
-//  case 21:    // Move Joint B out to full range
-//    command = 0;
-//    if (debug_control > 2) Serial.println (F("Command 21 - Move Joint B over full range"));
-//    IF_B_move_full_range(IF_B_range_full_count);  ///  << Limits movement
-//    break;
-//
-//  case 22:    // Move Joint B from home out to full range then back to home  
-//    command = 0; 
-//    if (debug_control > 2) Serial.println(F("Command 22 - Move Joint B from home out to full range then back to home"));
-//    IF_B_go_to_home();    
-//    IF_B_move_full_range(IF_B_range_full_count);  ///  << Limits movement
-//    IF_B_go_to_home();    
-//    break;
-//
-//  case 23:    // Move Joint C to specific angle  
-//    command = 0; 
-//    if (debug_control > 2) Serial.println(F("Command 23 - Move Joint B to specific angle"));
-//    break;
-// 
-//  case 30:    // Home Joint C   
-//    command = 0;     // Clear the command so that it does not run again 
-//        if (debug_control > 2) Serial.println (F("Command 30 - Home Joint C"));
-//    IF_C_go_to_home();
-//    break;
-//
-//  case 31:    // Move Joint C out to full range
-//    command = 0;
-//    if (debug_control > 2) Serial.println(F("Command 31 - Move Joint C over full range"));
-//    IF_C_move_full_range(IF_C_range_full_count);  ///  << Limits movement
-//    break;
-//
-//  case 32:    // Move Joint C from home out to full range then back to home  
-//    command = 0; 
-//    if (debug_control > 2) Serial.println(F("Command 32 - Move Joint C from home out to full range then back to home"));
-//    IF_C_go_to_home();    
-//    IF_C_move_full_range(IF_C_range_full_count);  ///  << Limits movement
-//    IF_C_go_to_home();    
-//    break;
-//
-//  case 33:    // Move Joint C to specific angle  
-//    command = 0; 
-//    if (debug_control > 2) Serial.println(F("Command 33 - Move Joint C to specific angle"));
-//    break;
-//
   case 40:  // Get Status flags
     command = 0;
     if (debug_control > 2) Serial.println(F("Command 40 - Get Status flags from all 3 Interaces"));
@@ -393,15 +355,15 @@ void loop() {
     if (debug_control > 2) Serial.println(F("Command 50 - Get Counts from all 3 Interaces"));
     break;
 
-  case 19: 
+  case 18: 
     command = 0;
-    Serial.println (">> Special - Move interface A away from home for 1 second");
-    unsigned long startMilliseconds = millis();
+    Serial.println (">> Special - Move interface A toward home for 1 second");
+    startMilliseconds = millis();
     IF_A_motor_not_timedout = true;  
     
     while (IF_A_motor_not_timedout ){
-      action_successful = IF_A_drive_motor(! IF_A_home_direction, IF_A_slow_speed);  // Stop the motor
-      IF_A_monitor_encoder(-1);  // Decrement the counter while homing
+      action_successful = IF_A_drive_motor(IF_A_home_direction, IF_A_slow_speed);  // Stop the motor
+      IF_A_monitor_encoder(1);  // Decrement the counter while homing
       currentMillis = millis();
       if (currentMillis - startMilliseconds > 1000) 
         {
@@ -411,7 +373,96 @@ void loop() {
     action_successful = IF_A_drive_motor(IF_A_home_direction, 0);  // Stop the motor
     break;
 
+  case 28: 
+    command = 0;
+    Serial.println (">> Special - Move interface B toward home for 1 second");
+    startMilliseconds = millis();
+    IF_B_motor_not_timedout = true;  
+    
+    while (IF_B_motor_not_timedout ){
+      action_successful = IF_B_drive_motor( IF_B_home_direction, IF_B_slow_speed);  // Start the motor
+      IF_B_monitor_encoder(1);  // Decrement the counter while homing
+      currentMillis = millis();
+      if (currentMillis - startMilliseconds > 1000) 
+        {
+        IF_B_motor_not_timedout = false;   
+        }
+    }
+    action_successful = IF_B_drive_motor(IF_B_home_direction, 0);  // Stop the motor
+    break;
 
+  case 38: 
+    command = 0;
+    Serial.println (">> Special - Move interface C toward home for 1 second");
+    startMilliseconds = millis();
+    IF_C_motor_not_timedout = true;  
+    
+    while (IF_C_motor_not_timedout ){
+      action_successful = IF_C_drive_motor( IF_C_home_direction, IF_C_slow_speed);  // Star the motor
+      IF_C_monitor_encoder(1);  // Decrement the counter while homing
+      currentMillis = millis();
+      if (currentMillis - startMilliseconds > 1000) 
+        {
+        IF_C_motor_not_timedout = false;   
+        }
+    }
+    action_successful = IF_C_drive_motor(IF_C_home_direction, 0);  // Stop the motor
+    break;
+
+  case 19: 
+    command = 0;
+    Serial.println (">> Special - Move interface A away from home for 1 second");
+    startMilliseconds = millis();
+    IF_A_motor_not_timedout = true;  
+    
+    while (IF_A_motor_not_timedout ){
+      action_successful = IF_A_drive_motor(! IF_A_home_direction, IF_A_slow_speed);  // Stop the motor
+      IF_A_monitor_encoder(1);  // Decrement the counter while homing
+      currentMillis = millis();
+      if (currentMillis - startMilliseconds > 1000) 
+        {
+        IF_A_motor_not_timedout = false;   
+        }
+    }
+    action_successful = IF_A_drive_motor(IF_A_home_direction, 0);  // Stop the motor
+    break;
+
+  case 29: 
+    command = 0;
+    Serial.println (">> Special - Move interface B away from home for 1 second");
+    startMilliseconds = millis();
+    IF_B_motor_not_timedout = true;  
+    
+    while (IF_B_motor_not_timedout ){
+      action_successful = IF_B_drive_motor(! IF_B_home_direction, IF_B_slow_speed);  // Start the motor
+      IF_B_monitor_encoder(1);  // Decrement the counter while homing
+      currentMillis = millis();
+      if (currentMillis - startMilliseconds > 1000) 
+        {
+        IF_B_motor_not_timedout = false;   
+        }
+    }
+    action_successful = IF_B_drive_motor(IF_B_home_direction, 0);  // Stop the motor
+    break;
+
+
+  case 39: 
+    command = 0;
+    Serial.println (">> Special - Move interface C away from home for 1 second");
+    startMilliseconds = millis();
+    IF_C_motor_not_timedout = true;  
+    
+    while (IF_C_motor_not_timedout ){
+      action_successful = IF_C_drive_motor(! IF_C_home_direction, IF_C_slow_speed);  // Star the motor
+      IF_C_monitor_encoder(1);  // Decrement the counter while homing
+      currentMillis = millis();
+      if (currentMillis - startMilliseconds > 1000) 
+        {
+        IF_C_motor_not_timedout = false;   
+        }
+    }
+    action_successful = IF_C_drive_motor(IF_C_home_direction, 0);  // Stop the motor
+    break;
 
   case 1:    // Stop All Motors
     command = 0; 
@@ -424,12 +475,12 @@ void loop() {
 
   default:
     break;
-  }
+  }  // Case Statement
 }
 
 //=================================================================================================
 //------------------------------------------
-void receiveEvent(int rx_byte_count)    //  Raspberry Pie sending to Arduino 
+void receiveEvent(int rx_byte_count)    //  Raspberry Pi sending to Arduino 
 {
 
   for (int i = 0; i < array_size; i++) {    // Clear out old data
