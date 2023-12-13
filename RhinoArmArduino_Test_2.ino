@@ -1,5 +1,5 @@
 #include <Wire.h>
-#define SLAVE_ADDRESS 0x08
+//#d e f ine SLAVE_ADDRESS 0x08
 //############################################
 
 // Dec 10, 2023   Interface A working - Arduino
@@ -7,6 +7,9 @@
 
 
 //=================================================================================================
+// Communication Contants
+int slave_address = 8;
+
 // Hardware constants
 const int IF_A_DIR = 2;           // D02 - Interface A - Direction Control
 const int IF_A_ENABLE_PWM = 3;    // D03 - Interface A - H-Bridge Enable Control
@@ -81,10 +84,10 @@ int  IF_X_max_speed = 0;
 int  IF_X_motor_timeout_milliseconds = 0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-int analog_input_pin_number_to_control_motor = A7;
-int analog_input_to_control_motor = 0;
+int slave_address_sensor_pin = A3;       // High = Address = 8, low = Address = 9
+int slave_address_sensor = 0;
 
-int command = 32;
+int command = 0;
 
 bool action_successful = false;
 int debug_control = 10;
@@ -203,8 +206,14 @@ The RPI can send a command to stop all motors to stop. This is a high priority c
 
 //=================================================================================================
 void setup() {
+setup_monitor_output();
+setup_pin_modes();
+
+slave_address_sensor = digitalRead(slave_address_sensor_pin);
+if (slave_address_sensor) slave_address = 8;
+if (!slave_address_sensor) slave_address = 9;
   
-Wire.begin(SLAVE_ADDRESS);
+Wire.begin(slave_address);
 Wire.onReceive(receiveEvent);
 Wire.onRequest(sendDataEvent);
 
@@ -212,13 +221,26 @@ Serial.begin(9600);
 Serial.println(F(""));
 Serial.println(F(">> Restarting "));
 
-setup_monitor_output();
-setup_pin_modes();
+Serial.print(F(">> slave_address_sensor: "));
+Serial.println(slave_address_sensor);
+
+Serial.print(F(">> slave_address: "));
+Serial.println(slave_address);
+
 
 // Identify which Robot Arm Joint the Arduino interface is controlling
-set_interface_X_parameters_to_Joint('D'); copy_interface_X_parameters_to_interface_('A');
-set_interface_X_parameters_to_Joint('E'); copy_interface_X_parameters_to_interface_('B');
-set_interface_X_parameters_to_Joint('F'); copy_interface_X_parameters_to_interface_('C');
+
+if (slave_address == 8){   // Arduino #1
+  set_interface_X_parameters_to_Joint('D'); copy_interface_X_parameters_to_interface_('A');
+  set_interface_X_parameters_to_Joint('E'); copy_interface_X_parameters_to_interface_('B');
+  set_interface_X_parameters_to_Joint('F'); copy_interface_X_parameters_to_interface_('C');
+  }
+
+if (slave_address == 9){   // Arduino #2
+  set_interface_X_parameters_to_Joint('A'); copy_interface_X_parameters_to_interface_('A');
+  set_interface_X_parameters_to_Joint('B'); copy_interface_X_parameters_to_interface_('B');
+  set_interface_X_parameters_to_Joint('C'); copy_interface_X_parameters_to_interface_('C');
+  }
 print_interface_parameters();
 
 //Joint A - Gripper
@@ -242,13 +264,8 @@ print_interface_parameters();
 //=================================================================================================
 void loop() {
 
-  if (command == 19){
-    Serial.println ("x9 command received");
-  }
-
   switch (command)
   {
-  
   case 10:    // Home Joint A   
     command = 0;     // Clear the command so that it does not run again 
         if (debug_control > 2) Serial.println (F("Command 10 - Home Joint A"));
@@ -345,14 +362,13 @@ void loop() {
     IF_C_go_to_home();    
     break;
 
-  case 40:  // Get Status flags
+  case 90:  // Get Status flags
     command = 0;
-    if (debug_control > 2) Serial.println(F("Command 40 - Get Status flags from all 3 Interaces"));
+    if (debug_control > 2) Serial.println(F("Command 90 - Get Status flags from all 3 Interaces"));
     break;
     
-  case 50:  // Get Interface Encoder Counts
-    command = 0;
-    if (debug_control > 2) Serial.println(F("Command 50 - Get Counts from all 3 Interaces"));
+  case 91:  // Get Interface Encoder Counts
+    if (debug_control > 2) Serial.println(F("Command 91 - Get Counts from all 3 Interaces"));
     break;
 
   case 18: 
@@ -506,9 +522,19 @@ void receiveEvent(int rx_byte_count)    //  Raspberry Pi sending to Arduino
 
   if (received_data_array[1] != 0) {
     last_command_received = received_data_array[1];
-    command = last_command_received;
-    Serial.print ("Last CMD: ");
+    if (slave_address == 8) command = last_command_received;
+    if (slave_address == 9) {
+      if ((command >=40) && (command <= 70)){
+        command = last_command_received-30;  
+      }
+    }
+    
+    Serial.print ("slave_address: ");
+    Serial.print (slave_address);
+    Serial.print ("    Last CMD: ");
     Serial.println (last_command_received);
+    Serial.print ("    Command: ");
+    Serial.println (command);
   }
 
   // -----------------------------------------------------------------------
@@ -546,12 +572,12 @@ void receiveEvent(int rx_byte_count)    //  Raspberry Pi sending to Arduino
   }
 
 // -----------------------------------------------------------------------
-  if (last_command_received == 40) {
+  if (last_command_received == 90) {
     Serial.println ("Req stat");
   }
 
-  if (received_data_array[1] == 50) {
-    //    Serial.println ("Requesting all counts");
+  if (received_data_array[1] == 91) {
+        Serial.println ("Req counts");
   }
 }
 
@@ -599,11 +625,11 @@ void sendDataEvent()
 
 
 
-  if (last_command_received == 40) {
+  if (last_command_received == 90) {
     Serial.print(IF_A_status);
     Serial.print(IF_B_status);
     Serial.print(IF_C_status);
-    Serial.println("CMD-40 Stat");
+    Serial.println("CMD-90 Stat");
 
     send_data_array[0] = IF_A_status;
     send_data_array[1] = IF_B_status;
@@ -611,7 +637,7 @@ void sendDataEvent()
 
   }
 
-  if (last_command_received == 50) {
+  if (last_command_received == 91) {
     send_data_array[0] = (IF_A_rotation_counter >> 8) & 0xff;  
     send_data_array[1] = IF_A_rotation_counter % 256;          
 
@@ -620,7 +646,7 @@ void sendDataEvent()
 
     send_data_array[4] = (IF_C_rotation_counter >> 8) & 0xff;  
     send_data_array[5] = IF_C_rotation_counter % 256;   
-    Serial.println("CMD-50 counts");
+    Serial.println("CMD-91 counts");
   }
 
   for (int i = 0; i < length_of_send_data_array; i++)
@@ -684,7 +710,7 @@ bool IF_A_go_to_home(){
   
   if (debug_control > 2) { Serial.print(F("IF_A_rotation_counter: "));  Serial.println(IF_A_rotation_counter);}
   IF_A_rotation_counter = 0;
-  if (debug_control > 2) Serial.print(F("IF_A_rotation_counter reset to zero: "));
+  if (debug_control > 2) Serial.println(F("IF_A_rotation_counter reset to zero: "));
   return IF_A_home_achieved;
 }
 
@@ -739,54 +765,12 @@ bool IF_B_go_to_home(){
   action_successful = IF_B_drive_motor(IF_B_home_direction, 0);  // Stop the motor
   
   if (debug_control > 2) { Serial.print(F("IF_B_rotation_counter: "));  Serial.println(IF_B_rotation_counter);}
-  IF_A_rotation_counter = 0;
+  IF_B_rotation_counter = 0;
   if (debug_control > 2) Serial.print(F("IF_B_rotation_counter reset to zero: "));
   return IF_B_home_achieved;
 }
 
-//void IF_B_go_to_home(){
-//    if (debug_control > 2) Serial.println(F("IF_B_go_to_home ")); 
-//    
-//    action_successful = IF_B_drive_motor(  IF_B_home_direction, IF_B_slow_speed);
-//
-//    unsigned long startMilliseconds = millis();
-//    unsigned long previousMillidisplay = millis();
-//
-//    bool limit_switch_status = limit_switch_triggered(IF_B_LIMIT);   // Returns True when limit hit
-//        
-//    while (! limit_switch_status && IF_B_motor_not_timedout ){
-//      IF_B_monitor_encoder(-1);  // Decrement the counter while homing
-//      currentMillis = millis();
-//      if (currentMillis - startMilliseconds > IF_B_motor_timeout_milliseconds) 
-//        {
-//        IF_B_motor_not_timedout = false;   
-//        if (debug_control > 2) Serial.println(F("Limit Switch B not triggered before timeout"));
-//        }
-//        
-//      if (currentMillis - previousMillidisplay > 500) 
-//        {
-//          previousMillidisplay = currentMillis;
-//          if (debug_control > 2) { Serial.print(F("Encoder B: ")); Serial.println(IF_B_rotation_counter);}
-//        }
-//
-//      if (limit_switch_status){
-//          IF_B_home_achieved = true;
-//      }
-//        
-//      limit_switch_status = limit_switch_triggered(IF_B_LIMIT);
-//      if (debug_control > 2) 
-//        if (limit_switch_status) Serial.println(F("Homing Limit Switch B Detected"));
-//    }
-//
-//  action_successful = IF_B_drive_motor(IF_B_home_direction, 0);  // Stop the motor
-//  
-//  if (debug_control > 2) { Serial.print(F("IF_B_rotation_counter: "));  Serial.println(IF_B_rotation_counter);}
-//  IF_B_rotation_counter = 0;
-//  if (debug_control > 2) Serial.print(F("IF_B_rotation_counter reset to zero "));
-//}
-
 //=================================================================================================
-//void IF_C_go_to_home(){
 
 bool IF_C_go_to_home(){
     if (debug_control > 2) Serial.println(F("IF_C_go_to_home ")); 
@@ -842,46 +826,6 @@ bool IF_C_go_to_home(){
 }
 
 
-//void IF_C_go_to_home(){
-//    if (debug_control > 2) Serial.println(F("IF_C_go_to_home ")); 
-//    
-//    action_successful = IF_C_drive_motor(  IF_C_home_direction, IF_C_slow_speed);
-//
-//    unsigned long startMilliseconds = millis();
-//    unsigned long previousMillidisplay = millis();
-//
-//    bool limit_switch_status = limit_switch_triggered(IF_C_LIMIT);   // Returns True when limit hit
-//        
-//    while (! limit_switch_status && IF_C_motor_not_timedout ){
-//      IF_C_monitor_encoder(-1);  // Decrement the counter while homing
-//      currentMillis = millis();
-//      if (currentMillis - startMilliseconds > IF_C_motor_timeout_milliseconds) 
-//        {
-//        IF_C_motor_not_timedout = false;   
-//        if (debug_control > 2) Serial.println(F("Limit Switch C not triggered before timeout"));
-//        }
-//        
-//      if (currentMillis - previousMillidisplay > 500) 
-//        {
-//          previousMillidisplay = currentMillis;
-//          if (debug_control > 2) { Serial.print(F("Encoder C: ")); Serial.println(IF_C_rotation_counter);}
-//        }
-//
-//      if (limit_switch_status){
-//          IF_C_home_achieved = true;
-//      }
-//        
-//      limit_switch_status = limit_switch_triggered(IF_C_LIMIT);
-//      if (debug_control > 2) 
-//        if (limit_switch_status) Serial.println(F("Homing Limit Switch C Detected"));
-//    }
-//
-//  action_successful = IF_C_drive_motor(IF_C_home_direction, 0);  // Stop the motor
-//  
-//  if (debug_control > 2) { Serial.print(F("IF_C_rotation_counter: "));  Serial.println(IF_C_rotation_counter);}
-//  IF_C_rotation_counter = 0;
-//  if (debug_control > 2) Serial.print(F("IF_C_rotation_counter reset to zero "));
-//}
 
 //=================================================================================================
 
@@ -1190,7 +1134,6 @@ bool IF_B_move_to_target_Count(int target_count ){
 }
 
 //=================================================================================================
-// bool IF_C_move_to_target_Count(int target_count ){
 bool IF_C_move_to_target_Count(int target_count ){
     bool command_successful = false;
 
@@ -1247,7 +1190,7 @@ bool IF_C_move_to_target_Count(int target_count ){
     bool encoder_limit_not_hit = true;
     bool encoder_limit_hit = false;
     bool IF_C_motor_not_at_target_count = true;
-    int  target_count_window_size = 3;
+    int  target_count_window_size = 10;
   
     unsigned long startMilliseconds = millis();      // Timers for timeout monitoring
     unsigned long previousMillidisplay = millis();
@@ -1268,7 +1211,7 @@ bool IF_C_move_to_target_Count(int target_count ){
         if (debug_control > 2) Serial.println(F("Encoder C count limit hit"));
       }
       
-      encoder_limit_not_hit = !encoder_limit_hit;   // ?? WHY not set to T or F
+      encoder_limit_not_hit = !encoder_limit_hit;   // 
 
       // Check to see if we have reached the time limit for this specific Joint
       currentMillis = millis();
@@ -1575,7 +1518,7 @@ void setup_pin_modes(){
   pinMode(IF_C_OPT_A, INPUT);
   pinMode(IF_C_OPT_B, INPUT);
 
-  pinMode(analog_input_pin_number_to_control_motor, INPUT);
+  pinMode(slave_address_sensor_pin, INPUT);
 }
 
 //=================================================================================================
