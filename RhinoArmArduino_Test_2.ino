@@ -372,12 +372,12 @@ void loop() {
 
   case 90:  // Get Status flags
     command = 0;
-//    if (debug_control > 2) Serial.println(F("Command 90 - Get Status flags from all 3 Interaces"));
+    if (debug_control > 2) Serial.println(F("Cmd 90-Gt stat"));
     break;
     
   case 91:  // Get Interface Encoder Counts
     command = 0;
-//    if (debug_control > 2) Serial.println(F("Command 91 - Get Counts from all 3 Interaces"));
+    if (debug_control > 2) Serial.println(F("Cmd 91-Gt Cnts"));
     break;
 
   case 18: 
@@ -574,6 +574,8 @@ void receiveEvent(int rx_byte_count)    //  Raspberry Pi sending to Arduino
       Serial.print ("  Last CMD: ");
       Serial.println (command);
     }
+
+    last_command_received = command;  // Used to determine what data to send back in the send data
     
 //    Serial.print ("slave_address: ");
 //    Serial.print (slave_address);
@@ -617,19 +619,24 @@ void receiveEvent(int rx_byte_count)    //  Raspberry Pi sending to Arduino
 
 
 // -----------------------------------------------------------------------
-//  if (command == 90) {
-//    Serial.println ("Req stat");
-//  }
-//
-//  if (command == 91) {
-//        Serial.println ("Req counts");
-//  }
+  if (command == 90) {
+    Serial.println ("Rec cmd 90 stat");
+  }
+
+  if (command == 91) {
+    Serial.println ("Rec cmd 91 counts");
+  }
 }
 
 //
 //------------------------------------------
 void sendDataEvent()     // Send data from Arduino to RPI (Need to be very, very quick)
 {
+
+  command = last_command_received;
+//  Serial.print ("c:");
+//  Serial.println (command);
+  
   for (int i = 0; i < array_size; i++) {    // Clear out old data
     send_data_array[i] = 0;
     }
@@ -688,11 +695,7 @@ void sendDataEvent()     // Send data from Arduino to RPI (Need to be very, very
     send_data_array[4] = (IF_C_rotation_counter >> 8) & 0xff;  
     send_data_array[5] = IF_C_rotation_counter % 256;   
     length_of_send_data_array = 6;
-
     }
-
-
-// WHAT SETS:  length_of_send_data_array
 
   for (int i = 0; i < length_of_send_data_array; i++)
   {
