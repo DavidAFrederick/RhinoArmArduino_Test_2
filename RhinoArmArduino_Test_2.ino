@@ -72,9 +72,9 @@ bool IF_A_motor_not_timedout = true;
 bool IF_B_motor_not_timedout = true;
 bool IF_C_motor_not_timedout = true;
 
-int  IF_A_motor_timeout_milliseconds = 20000;
-int  IF_B_motor_timeout_milliseconds = 20000;
-int  IF_C_motor_timeout_milliseconds = 20000;
+int  IF_A_motor_timeout_milliseconds = 10000;
+int  IF_B_motor_timeout_milliseconds = 10000;
+int  IF_C_motor_timeout_milliseconds = 10000;
 
 
 int  IF_X_range_full_count = 0;
@@ -97,6 +97,14 @@ long interval = 1000;
 unsigned long currentMillis;
 
 int loop_state = 0;
+
+int starting_encoder_count = 0;
+int ending_encoder_count = 0;
+int IF_A_delta_encoder_Count = 0;
+int IF_B_delta_encoder_Count = 0;
+int IF_C_delta_encoder_Count = 0;
+
+
 
 //int IF_A_target_count = 0;
 //int IF_B_target_count = 0;
@@ -231,15 +239,15 @@ Serial.println(slave_address);
 // Identify which Robot Arm Joint the Arduino interface is controlling
 
 if (slave_address == 8){   // Arduino #1
-  set_interface_X_parameters_to_Joint('D'); copy_interface_X_parameters_to_interface_('A');
-  set_interface_X_parameters_to_Joint('E'); copy_interface_X_parameters_to_interface_('B');
-  set_interface_X_parameters_to_Joint('F'); copy_interface_X_parameters_to_interface_('C');
-  }
-
-if (slave_address == 9){   // Arduino #2
   set_interface_X_parameters_to_Joint('A'); copy_interface_X_parameters_to_interface_('A');
   set_interface_X_parameters_to_Joint('B'); copy_interface_X_parameters_to_interface_('B');
   set_interface_X_parameters_to_Joint('C'); copy_interface_X_parameters_to_interface_('C');
+  }
+
+if (slave_address == 9){   // Arduino #2
+  set_interface_X_parameters_to_Joint('D'); copy_interface_X_parameters_to_interface_('A');
+  set_interface_X_parameters_to_Joint('E'); copy_interface_X_parameters_to_interface_('B');
+  set_interface_X_parameters_to_Joint('F'); copy_interface_X_parameters_to_interface_('C');
   }
 print_interface_parameters();
 
@@ -364,11 +372,12 @@ void loop() {
 
   case 90:  // Get Status flags
     command = 0;
-    if (debug_control > 2) Serial.println(F("Command 90 - Get Status flags from all 3 Interaces"));
+//    if (debug_control > 2) Serial.println(F("Command 90 - Get Status flags from all 3 Interaces"));
     break;
     
   case 91:  // Get Interface Encoder Counts
-    if (debug_control > 2) Serial.println(F("Command 91 - Get Counts from all 3 Interaces"));
+    command = 0;
+//    if (debug_control > 2) Serial.println(F("Command 91 - Get Counts from all 3 Interaces"));
     break;
 
   case 18: 
@@ -376,6 +385,8 @@ void loop() {
     Serial.println (">> Special - Move interface A toward home for 1 second");
     startMilliseconds = millis();
     IF_A_motor_not_timedout = true;  
+
+    starting_encoder_count = IF_A_rotation_counter;
     
     while (IF_A_motor_not_timedout ){
       action_successful = IF_A_drive_motor(IF_A_home_direction, IF_A_slow_speed);  // Stop the motor
@@ -387,6 +398,10 @@ void loop() {
         }
     }
     action_successful = IF_A_drive_motor(IF_A_home_direction, 0);  // Stop the motor
+    ending_encoder_count = IF_A_rotation_counter;
+    IF_A_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count)
+    Serial.print ("Interface A - Counts in 1 second: ");
+    Serial.println (IF_A_delta_encoder_Count);
     break;
 
   case 28: 
@@ -395,6 +410,7 @@ void loop() {
     startMilliseconds = millis();
     IF_B_motor_not_timedout = true;  
     
+    starting_encoder_count = IF_B_rotation_counter;
     while (IF_B_motor_not_timedout ){
       action_successful = IF_B_drive_motor( IF_B_home_direction, IF_B_slow_speed);  // Start the motor
       IF_B_monitor_encoder(1);  // Decrement the counter while homing
@@ -405,6 +421,11 @@ void loop() {
         }
     }
     action_successful = IF_B_drive_motor(IF_B_home_direction, 0);  // Stop the motor
+    
+    ending_encoder_count = IF_B_rotation_counter;
+    IF_B_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count)
+    Serial.print ("Interface B - Counts in 1 second: ");
+    Serial.println (IF_B_delta_encoder_Count);
     break;
 
   case 38: 
@@ -413,6 +434,7 @@ void loop() {
     startMilliseconds = millis();
     IF_C_motor_not_timedout = true;  
     
+    starting_encoder_count = IF_C_rotation_counter;
     while (IF_C_motor_not_timedout ){
       action_successful = IF_C_drive_motor( IF_C_home_direction, IF_C_slow_speed);  // Star the motor
       IF_C_monitor_encoder(1);  // Decrement the counter while homing
@@ -423,6 +445,11 @@ void loop() {
         }
     }
     action_successful = IF_C_drive_motor(IF_C_home_direction, 0);  // Stop the motor
+
+    ending_encoder_count = IF_C_rotation_counter;
+    IF_C_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count)
+    Serial.print ("Interface C - Counts in 1 second: ");
+    Serial.println (IF_C_delta_encoder_Count);
     break;
 
   case 19: 
@@ -431,6 +458,7 @@ void loop() {
     startMilliseconds = millis();
     IF_A_motor_not_timedout = true;  
     
+    starting_encoder_count = IF_A_rotation_counter;
     while (IF_A_motor_not_timedout ){
       action_successful = IF_A_drive_motor(! IF_A_home_direction, IF_A_slow_speed);  // Stop the motor
       IF_A_monitor_encoder(1);  // Decrement the counter while homing
@@ -441,6 +469,11 @@ void loop() {
         }
     }
     action_successful = IF_A_drive_motor(IF_A_home_direction, 0);  // Stop the motor
+
+    ending_encoder_count = IF_A_rotation_counter;
+    IF_A_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count)
+    Serial.print ("Interface A - Counts in 1 second: ");
+    Serial.println (IF_A_delta_encoder_Count);
     break;
 
   case 29: 
@@ -449,6 +482,7 @@ void loop() {
     startMilliseconds = millis();
     IF_B_motor_not_timedout = true;  
     
+    starting_encoder_count = IF_B_rotation_counter;
     while (IF_B_motor_not_timedout ){
       action_successful = IF_B_drive_motor(! IF_B_home_direction, IF_B_slow_speed);  // Start the motor
       IF_B_monitor_encoder(1);  // Decrement the counter while homing
@@ -459,6 +493,11 @@ void loop() {
         }
     }
     action_successful = IF_B_drive_motor(IF_B_home_direction, 0);  // Stop the motor
+
+    ending_encoder_count = IF_B_rotation_counter;
+    IF_B_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count)
+    Serial.print ("Interface B - Counts in 1 second: ");
+    Serial.println (IF_B_delta_encoder_Count);
     break;
 
 
@@ -468,6 +507,7 @@ void loop() {
     startMilliseconds = millis();
     IF_C_motor_not_timedout = true;  
     
+    starting_encoder_count = IF_C_rotation_counter;
     while (IF_C_motor_not_timedout ){
       action_successful = IF_C_drive_motor(! IF_C_home_direction, IF_C_slow_speed);  // Star the motor
       IF_C_monitor_encoder(1);  // Decrement the counter while homing
@@ -478,6 +518,11 @@ void loop() {
         }
     }
     action_successful = IF_C_drive_motor(IF_C_home_direction, 0);  // Stop the motor
+
+    ending_encoder_count = IF_C_rotation_counter;
+    IF_C_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count)
+    Serial.print ("Interface C - Counts in 1 second: ");
+    Serial.println (IF_C_delta_encoder_Count);
     break;
 
   case 1:    // Stop All Motors
@@ -498,87 +543,87 @@ void loop() {
 //------------------------------------------
 void receiveEvent(int rx_byte_count)    //  Raspberry Pi sending to Arduino 
 {
-
   for (int i = 0; i < array_size; i++) {    // Clear out old data
     received_data_array[i] = 0;
-  }
+    }
 
   for (int i = 0; i < rx_byte_count; i++)  {  // Receive the data and place in array
     received_data_array[i] = Wire.read();
-  }
+    }
   // Get the byte count for the response
   if (rx_byte_count > 1) {
     length_of_send_data_array = received_data_array[rx_byte_count - 1]; //  The last byte is the response size
-//    Serial.print(" Exit RX   Response size: ");
-//    Serial.println(length_of_send_data_array);
-  }
+    }
 
-  Serial.print ("R");
-  for (int i = 0; i < rx_byte_count; i++)  {
-    Serial.print(received_data_array[i]);   //check what you are receiving against an Intel-Hex frame
-//    Serial.print ("R");
-  }
-  Serial.println ("|");
+  if (debug_control > 200){
+    Serial.print ("R");
+    for (int i = 0; i < rx_byte_count; i++)  {
+      Serial.print(received_data_array[i]);   //check what you are receiving 
+    }
+    Serial.println ("|");
+    }
+  
 
   if (received_data_array[1] != 0) {
-    last_command_received = received_data_array[1];
-    if (slave_address == 8) command = last_command_received;
+    command = received_data_array[1];
+
     if (slave_address == 9) {
       if ((command >=40) && (command <= 70)){
-        command = last_command_received-30;  
+        command = command-30;  
       }
+      Serial.print ("  Last CMD: ");
+      Serial.println (command);
     }
     
-    Serial.print ("slave_address: ");
-    Serial.print (slave_address);
-    Serial.print ("    Last CMD: ");
-    Serial.println (last_command_received);
-    Serial.print ("    Command: ");
-    Serial.println (command);
+//    Serial.print ("slave_address: ");
+//    Serial.print (slave_address);
+//    Serial.print ("    Command: ");
+//    Serial.println (command);
   }
 
   // -----------------------------------------------------------------------
-  if (received_data_array[1] == 11) {
+  if (command == 11) {
     int IF_A_angle_target = received_data_array[2];
     Serial.print ("Ang A: "); Serial.println (IF_A_angle_target);
   };
 
 // -----------------------------------------------------------------------
-  if (received_data_array[1] == 21) {
+  if (command == 21) {
     int IF_B_angle_target = received_data_array[2];
     //  Serial.print ("Ang B: "); Serial.println (IF_A_angle_target);
   };
 
 // -----------------------------------------------------------------------
-  if (received_data_array[1] == 31) {
+  if (command == 31) {
     int IF_C_angle_target = received_data_array[2];
     //  Serial.print ("Ang C: "); Serial.println (IF_A_angle_target);
   };
 
 // -----------------------------------------------------------------------
-  if (received_data_array[1] == 12) {
+  if (command == 12) {
     IF_A_count_target = (received_data_array[2] * 256) +  received_data_array[3];
     Serial.print ("IF_A_count_target: "); Serial.println (IF_A_count_target);
     };
 
-  if (received_data_array[1] == 22) {
+  if (command == 22) {
     IF_B_count_target = (received_data_array[2] * 256) +  received_data_array[3];
     Serial.print ("IF_B_count_target: "); Serial.println (IF_B_count_target);
     };
 
-  if (received_data_array[1] == 32) {
+  if (command == 32) {
     IF_C_count_target = (received_data_array[2] * 256) +  received_data_array[3];
     Serial.print ("IF_C_count_target: "); Serial.println (IF_C_count_target);
   }
 
-// -----------------------------------------------------------------------
-  if (last_command_received == 90) {
-    Serial.println ("Req stat");
-  }
 
-  if (received_data_array[1] == 91) {
-        Serial.println ("Req counts");
-  }
+// -----------------------------------------------------------------------
+//  if (command == 90) {
+//    Serial.println ("Req stat");
+//  }
+//
+//  if (command == 91) {
+//        Serial.println ("Req counts");
+//  }
 }
 
 //
@@ -587,57 +632,49 @@ void sendDataEvent()
 {
   for (int i = 0; i < array_size; i++) {    // Clear out old data
     send_data_array[i] = 0;
-  }
+    }
 
   send_data_array[0] = 0;
-  send_data_array[1] = 1;
-  send_data_array[2] = 2;
-  send_data_array[3] = 3;
-  send_data_array[4] = 4;
-  send_data_array[5] = 5;
-  send_data_array[6] = 6;
-  //  send_data_array[7] = 7;
-  //  send_data_array[8] = 8;
-  //  send_data_array[9] = 9;
-  //  send_data_array[10] = 10;
-  //  send_data_array[11] = 11;
-  //  send_data_array[12] = 12;
-  //  send_data_array[13] = 13;
-  //  send_data_array[14] = 14;
-  //  send_data_array[15] = 15;
-  //  send_data_array[16] = 16;
-  //  send_data_array[17] = 17;
-  //  send_data_array[18] = 18;
-  //  send_data_array[19] = 19;
-  //  send_data_array[20] = 20;
-
-  if (last_command_received == 11) {
-    send_data_array[length_of_send_data_array - 1] = IF_A_status;
-  }
-
-  if (last_command_received == 12) {
-    send_data_array[length_of_send_data_array - 1] = IF_B_status;
-  }
-
-  if (last_command_received == 13) {
-    send_data_array[length_of_send_data_array - 1] = IF_C_status;
-  }
+  send_data_array[1] = 0;
+  send_data_array[2] = 0;
+  send_data_array[3] = 0;
+  send_data_array[4] = 0;
+  send_data_array[5] = 0;
+  send_data_array[6] = 0;
 
 
+//  if (command == 11) {
+//    send_data_array[length_of_send_data_array - 1] = IF_A_status;
+//  }
+//
+//  if (command == 12) {
+//    send_data_array[length_of_send_data_array - 1] = IF_B_status;
+//  }
+//
+//  if (command == 13) {
+//    send_data_array[length_of_send_data_array - 1] = IF_C_status;
+//  }
 
-  if (last_command_received == 90) {
-    Serial.print(IF_A_status);
-    Serial.print(IF_B_status);
-    Serial.print(IF_C_status);
-    Serial.println("CMD-90 Stat");
 
+  if (command == 17) {
+    send_data_array[0] = IF_A_delta_encoder_Count;
+    }
+
+  if (command == 27) {
+    send_data_array[0] = IF_B_delta_encoder_Count;
+    }
+
+  if (command == 37) {
+    send_data_array[0] = IF_C_delta_encoder_Count;
+    }
+
+  if (command == 90) {
     send_data_array[0] = IF_A_status;
     send_data_array[1] = IF_B_status;
     send_data_array[2] = IF_C_status;
+    }
 
-  }
-
-  if (last_command_received == 91) {
+  if (command == 91) {
     send_data_array[0] = (IF_A_rotation_counter >> 8) & 0xff;  
     send_data_array[1] = IF_A_rotation_counter % 256;          
 
@@ -646,12 +683,31 @@ void sendDataEvent()
 
     send_data_array[4] = (IF_C_rotation_counter >> 8) & 0xff;  
     send_data_array[5] = IF_C_rotation_counter % 256;   
-    Serial.println("CMD-91 counts");
-  }
+    }
 
   for (int i = 0; i < length_of_send_data_array; i++)
   {
     Wire.write(send_data_array[i]);
+  }
+
+  if (command == 90) {
+    Serial.print("90st A");
+    Serial.print(IF_A_status);
+    Serial.print("B");
+    Serial.print(IF_B_status);
+    Serial.print("C");
+    Serial.print(IF_C_status);
+    Serial.println("|");
+  }
+
+  if (command == 91) {
+    Serial.print("91cts");
+    Serial.print(IF_A_rotation_counter);
+    Serial.print("|");
+    Serial.print(IF_B_rotation_counter);
+    Serial.print("|");
+    Serial.print(IF_C_rotation_counter);
+    Serial.println("|");
   }
 
 }  // end of Send Data Event
@@ -833,7 +889,7 @@ bool IF_A_drive_motor(int _direction, int _speed){
 
   digitalWrite(IF_A_DIR,   _direction);  // 
   analogWrite(IF_A_ENABLE_PWM, _speed); // where dutyCycle is a value from 0 to 255
-  if (debug_control > 2) {
+  if (debug_control > 200) {
     Serial.print(F("Motor A dir: ")); 
     Serial.print(_direction);
     Serial.print(F("  speed: "));
@@ -847,7 +903,7 @@ bool IF_B_drive_motor(int _direction, int _speed){
 
   digitalWrite(IF_B_DIR,   _direction);  // 
   analogWrite(IF_B_ENABLE_PWM, _speed); // where dutyCycle is a value from 0 to 255
-  if (debug_control > 2) {
+  if (debug_control > 200) {
     Serial.print(F("Motor B dir: ")); 
     Serial.print(_direction);
     Serial.print(F("  speed: "));
@@ -861,7 +917,7 @@ bool IF_C_drive_motor(int _direction, int _speed){
 
   digitalWrite(IF_C_DIR,   _direction);  // 
   analogWrite(IF_C_ENABLE_PWM, _speed); // where dutyCycle is a value from 0 to 255
-  if (debug_control > 2) {
+  if (debug_control > 200) {
     Serial.print(F("Motor dir C: ")); 
     Serial.print(_direction);
     Serial.print(F("  speed: "));
@@ -882,6 +938,21 @@ bool limit_switch_triggered(int _pin){
 //  Serial.println (return_value);
   return ! return_value;  // Invert the sense of the pin
 }
+
+//=================================================================================================
+bool IF_A_test_encoder(int direction){
+  
+  // get current encoder count 
+  // start motor
+  // start timer at zero
+  // while timer not at limit (0.5)
+  // Monitor and count encoder triggers
+  // stop motor
+  // Collect results
+  // Evaluate results
+  // 
+}
+
 
 //=================================================================================================
 //  Keep this routine short to reduce the chance  of missing an edge transition
@@ -917,6 +988,7 @@ void IF_C_monitor_encoder(int increment_direction){
   if (IF_C_opt_A_previous_status != IF_C_opt_A_status){
     if (IF_C_opt_A_status == 1){
       IF_C_rotation_counter = IF_C_rotation_counter + increment_direction;
+//      Serial.print (".");
     }
   }
   IF_C_opt_A_previous_status = IF_C_opt_A_status;
@@ -1141,6 +1213,8 @@ bool IF_C_move_to_target_Count(int target_count ){
 
     // Log  the command and target  count
     if (debug_control > 2) {
+      Serial.print(F("IF_C CURRENT count: ")); 
+      Serial.println (IF_C_rotation_counter);
       Serial.print(F("IF_C moving to target count: ")); 
       Serial.println (target_count);
       Serial.print(F("IF_C IF_C_home_achieved: ")); 
@@ -1375,7 +1449,7 @@ void set_interface_X_parameters_to_Joint(char joint){
     IF_X_home_direction             = 0;      //
     IF_X_slow_speed                 = 80;    // PWM value
     IF_X_max_speed                  = 200;    // PWM value
-    IF_X_motor_timeout_milliseconds = 15000;  // Milliseconds
+    IF_X_motor_timeout_milliseconds = 10000;  // Milliseconds
     break;
 
   case 'B':    // Joint C   
@@ -1383,7 +1457,7 @@ void set_interface_X_parameters_to_Joint(char joint){
     IF_X_home_direction             = 1;      //
     IF_X_slow_speed                 = 200;    // PWM value
     IF_X_max_speed                  = 200;    // PWM value
-    IF_X_motor_timeout_milliseconds = 15000;  // Milliseconds
+    IF_X_motor_timeout_milliseconds = 10000;  // Milliseconds
     break;
   
   case 'C':    // Joint C   
@@ -1391,7 +1465,7 @@ void set_interface_X_parameters_to_Joint(char joint){
     IF_X_home_direction             = 1;      //
     IF_X_slow_speed                 = 150;    // PWM value
     IF_X_max_speed                  = 200;    // PWM value
-    IF_X_motor_timeout_milliseconds = 15000;  // Milliseconds
+    IF_X_motor_timeout_milliseconds = 10000;  // Milliseconds
     break;
 
   case 'D':    // Joint C   
@@ -1399,7 +1473,7 @@ void set_interface_X_parameters_to_Joint(char joint){
     IF_X_home_direction             = 0;      //
     IF_X_slow_speed                 = 150;    // PWM value
     IF_X_max_speed                  = 200;    // PWM value
-    IF_X_motor_timeout_milliseconds = 15000;  // Milliseconds
+    IF_X_motor_timeout_milliseconds = 10000;  // Milliseconds
     break;
     
   case 'E':    // Joint C   
@@ -1407,7 +1481,7 @@ void set_interface_X_parameters_to_Joint(char joint){
     IF_X_home_direction             = 0;      //
     IF_X_slow_speed                 = 150;    // PWM value
     IF_X_max_speed                  = 200;    // PWM value
-    IF_X_motor_timeout_milliseconds = 15000;  // Milliseconds
+    IF_X_motor_timeout_milliseconds = 10000;  // Milliseconds
     break;
     
   case 'F':    // Joint C   
@@ -1415,7 +1489,7 @@ void set_interface_X_parameters_to_Joint(char joint){
     IF_X_home_direction             = 0;      //
     IF_X_slow_speed                 = 200;    // PWM value
     IF_X_max_speed                  = 200;    // PWM value
-    IF_X_motor_timeout_milliseconds = 15000;  // Milliseconds
+    IF_X_motor_timeout_milliseconds = 10000;  // Milliseconds
     break;
   }
 
