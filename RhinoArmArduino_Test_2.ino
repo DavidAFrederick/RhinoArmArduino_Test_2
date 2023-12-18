@@ -399,7 +399,7 @@ void loop() {
     }
     action_successful = IF_A_drive_motor(IF_A_home_direction, 0);  // Stop the motor
     ending_encoder_count = IF_A_rotation_counter;
-    IF_A_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count)
+    IF_A_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
     Serial.print ("Interface A - Counts in 1 second: ");
     Serial.println (IF_A_delta_encoder_Count);
     break;
@@ -423,7 +423,7 @@ void loop() {
     action_successful = IF_B_drive_motor(IF_B_home_direction, 0);  // Stop the motor
     
     ending_encoder_count = IF_B_rotation_counter;
-    IF_B_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count)
+    IF_B_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
     Serial.print ("Interface B - Counts in 1 second: ");
     Serial.println (IF_B_delta_encoder_Count);
     break;
@@ -447,7 +447,7 @@ void loop() {
     action_successful = IF_C_drive_motor(IF_C_home_direction, 0);  // Stop the motor
 
     ending_encoder_count = IF_C_rotation_counter;
-    IF_C_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count)
+    IF_C_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
     Serial.print ("Interface C - Counts in 1 second: ");
     Serial.println (IF_C_delta_encoder_Count);
     break;
@@ -471,7 +471,7 @@ void loop() {
     action_successful = IF_A_drive_motor(IF_A_home_direction, 0);  // Stop the motor
 
     ending_encoder_count = IF_A_rotation_counter;
-    IF_A_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count)
+    IF_A_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
     Serial.print ("Interface A - Counts in 1 second: ");
     Serial.println (IF_A_delta_encoder_Count);
     break;
@@ -495,7 +495,7 @@ void loop() {
     action_successful = IF_B_drive_motor(IF_B_home_direction, 0);  // Stop the motor
 
     ending_encoder_count = IF_B_rotation_counter;
-    IF_B_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count)
+    IF_B_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
     Serial.print ("Interface B - Counts in 1 second: ");
     Serial.println (IF_B_delta_encoder_Count);
     break;
@@ -520,7 +520,7 @@ void loop() {
     action_successful = IF_C_drive_motor(IF_C_home_direction, 0);  // Stop the motor
 
     ending_encoder_count = IF_C_rotation_counter;
-    IF_C_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count)
+    IF_C_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
     Serial.print ("Interface C - Counts in 1 second: ");
     Serial.println (IF_C_delta_encoder_Count);
     break;
@@ -628,7 +628,7 @@ void receiveEvent(int rx_byte_count)    //  Raspberry Pi sending to Arduino
 
 //
 //------------------------------------------
-void sendDataEvent()
+void sendDataEvent()     // Send data from Arduino to RPI (Need to be very, very quick)
 {
   for (int i = 0; i < array_size; i++) {    // Clear out old data
     send_data_array[i] = 0;
@@ -658,20 +658,24 @@ void sendDataEvent()
 
   if (command == 17) {
     send_data_array[0] = IF_A_delta_encoder_Count;
+    length_of_send_data_array = 1;
     }
 
   if (command == 27) {
     send_data_array[0] = IF_B_delta_encoder_Count;
+    length_of_send_data_array = 1;
     }
 
   if (command == 37) {
     send_data_array[0] = IF_C_delta_encoder_Count;
+    length_of_send_data_array = 1;
     }
 
   if (command == 90) {
     send_data_array[0] = IF_A_status;
     send_data_array[1] = IF_B_status;
     send_data_array[2] = IF_C_status;
+    length_of_send_data_array = 3;
     }
 
   if (command == 91) {
@@ -683,7 +687,12 @@ void sendDataEvent()
 
     send_data_array[4] = (IF_C_rotation_counter >> 8) & 0xff;  
     send_data_array[5] = IF_C_rotation_counter % 256;   
+    length_of_send_data_array = 6;
+
     }
+
+
+// WHAT SETS:  length_of_send_data_array
 
   for (int i = 0; i < length_of_send_data_array; i++)
   {
