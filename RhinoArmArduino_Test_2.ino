@@ -2,7 +2,7 @@
 //#d e f ine SLAVE_ADDRESS 0x08
 //############################################
 
-// Dec 10, 2023   Interface A working - Arduino
+// Dec 22, 2023   Interface A working - Arduino
 // On Git      || Near line 212 for interface to joint definition
 
 
@@ -280,6 +280,15 @@ void loop() {
 
   switch (command)
   {
+
+  case 1:    // Stop All Motors
+    command = 0; 
+    if (debug_control > 2) Serial.println(F("Command 0 - STOP ALL MOTORS"));
+    analogWrite(IF_A_ENABLE_PWM, 0);
+    analogWrite(IF_B_ENABLE_PWM, 0);
+    analogWrite(IF_C_ENABLE_PWM, 0);
+    break;
+
   case 10:    // Home Joint A   
     command = 0;     // Clear the command so that it does not run again 
         if (debug_control > 2) Serial.println (F("Command 10 - Home Joint A"));
@@ -412,12 +421,10 @@ void loop() {
     IF_B_Move_toward_home_for_one_Second();
     break;
 
-
-
   case 38: 
     command = 0;
     Serial.println (F(">> Special - Move interface C toward home for 1 second"));
-    IF_A_Move_toward_home_for_one_Second();
+    IF_C_Move_toward_home_for_one_Second();
     break;
 
  
@@ -456,7 +463,7 @@ void loop() {
       action_successful = IF_B_drive_motor(! IF_B_home_direction, IF_B_slow_speed);  // Start the motor
       IF_B_monitor_encoder(1);  // Decrement the counter while homing
       currentMillis = millis();
-      if (currentMillis - startMilliseconds > 1000) 
+      if (currentMillis - startMilliseconds > 1000) //TEMP
         {
         IF_B_motor_not_timedout = false;   
         }
@@ -481,7 +488,7 @@ void loop() {
       action_successful = IF_C_drive_motor(! IF_C_home_direction, IF_C_slow_speed);  // Star the motor
       IF_C_monitor_encoder(1);  // Decrement the counter while homing
       currentMillis = millis();
-      if (currentMillis - startMilliseconds > 1000) 
+      if (currentMillis - startMilliseconds > 1000) //TEMP 
         {
         IF_C_motor_not_timedout = false;   
         }
@@ -494,14 +501,13 @@ void loop() {
     Serial.println (IF_C_delta_encoder_Count);
     break;
 
-  case 1:    // Stop All Motors
-    command = 0; 
-    if (debug_control > 2) Serial.println(F("Command 0 - STOP ALL MOTORS"));
-    analogWrite(IF_A_ENABLE_PWM, 0);
-    analogWrite(IF_B_ENABLE_PWM, 0);
-    analogWrite(IF_C_ENABLE_PWM, 0);
-
-    break;
+//  case 1:    // Stop All Motors
+//    command = 0; 
+//    if (debug_control > 2) Serial.println(F("Command 0 - STOP ALL MOTORS"));
+//    analogWrite(IF_A_ENABLE_PWM, 0);
+//    analogWrite(IF_B_ENABLE_PWM, 0);
+//    analogWrite(IF_C_ENABLE_PWM, 0);
+//    break;
 
   default:
     break;
@@ -542,7 +548,7 @@ void IF_B_Move_toward_home_for_one_Second(){
       action_successful = IF_B_drive_motor( IF_B_home_direction, IF_B_slow_speed);  // Start the motor
       IF_B_monitor_encoder(1);  // Decrement the counter while homing
       currentMillis = millis();
-      if (currentMillis - startMilliseconds > 1000) 
+      if (currentMillis - startMilliseconds > 1000)  //TEMP
         {
         IF_B_motor_not_timedout = false;   
         }
@@ -565,7 +571,7 @@ void     IF_C_Move_toward_home_for_one_Second(){
         action_successful = IF_C_drive_motor( IF_C_home_direction, IF_C_slow_speed);  // Star the motor
         IF_C_monitor_encoder(1);  // Decrement the counter while homing
         currentMillis = millis();
-        if (currentMillis - startMilliseconds > 1000) 
+        if (currentMillis - startMilliseconds > 1000) //TEMP
           {
           IF_C_motor_not_timedout = false;   
           }
@@ -679,8 +685,8 @@ void sendDataEvent()     // Send data from Arduino to RPI (Need to be very, very
 {
 
   command = last_command_received;
-//  Serial.print ("c:");
-//  Serial.println (command);
+  Serial.print ("c:");
+  Serial.println (command);
   
   for (int i = 0; i < array_size; i++) {    // Clear out old data
     send_data_array[i] = 0;
@@ -707,6 +713,35 @@ void sendDataEvent()     // Send data from Arduino to RPI (Need to be very, very
 //    send_data_array[length_of_send_data_array - 1] = IF_C_status;
 //  }
 
+//=========================================
+
+  if (command == 3) {
+
+    send_data_array[0] = digitalRead(IF_A_LIMIT);
+    send_data_array[1] = digitalRead(IF_B_LIMIT);
+    send_data_array[2] = digitalRead(IF_C_LIMIT);
+
+    // Returns zero when limit switch engaged
+
+    Serial.print ("L");
+    Serial.print (send_data_array[0]);
+    Serial.print (send_data_array[1]);
+    Serial.println (send_data_array[2]);
+
+
+//    
+//    IF_A__limit_sw_status = digitalRead(IF_A_LIMIT);
+//    IF_B__limit_sw_status = digitalRead(IF_B_LIMIT);
+//    IF_C__limit_sw_status = digitalRead(IF_C_LIMIT);
+//
+//    send_data_array[0] = IF_A__limit_sw_status;
+//    send_data_array[1] = IF_B__limit_sw_status;
+//    send_data_array[2] = IF_C__limit_sw_status;
+
+    length_of_send_data_array = 3;
+  }
+
+//=========================================
 
   if (command == 17) {
     send_data_array[0] = IF_A_delta_encoder_Count;
@@ -745,7 +780,9 @@ void sendDataEvent()     // Send data from Arduino to RPI (Need to be very, very
   for (int i = 0; i < length_of_send_data_array; i++)
   {
     Wire.write(send_data_array[i]);
+//    Serial.print(send_data_array[i]);
   }
+//  Serial.println ("|");
 
   if (command == 90) {
     if (debug_control > 200){
