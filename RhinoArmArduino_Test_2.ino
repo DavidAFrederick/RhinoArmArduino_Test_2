@@ -378,102 +378,52 @@ void loop() {
 
   case 90:  // Get Status flags
     command = 0;
-    if (debug_control > 2) Serial.println(F("Cmd 90-Gt stat"));
+    if (debug_control > 200) Serial.println(F("Cmd 90-Gt stat"));
     break;
     
   case 91:  // Get Interface Encoder Counts
     command = 0;
-    if (debug_control > 2) Serial.println(F("Cmd 91-Gt Cnts"));
+    if (debug_control > 200) Serial.println(F("Cmd 91-Gt Cnts"));
     break;
 
-  case 17: 
-    Serial.println ("R17");
+  case 15: 
+    Serial.println (F(">> Special - Move interface A away from home then to home"));
     IF_A_go_away_from_home_until_limited();
+    break;
+
+  case 25: 
+    Serial.println (F(">> Special - Move interface B away from home then to home"));
+    IF_B_go_away_from_home_until_limited();
+    break;
+
+  case 35: 
+    Serial.println (F(">> Special - Move interface C away from home then to home"));
+    IF_C_go_away_from_home_until_limited();
     break;
 
   case 18: 
     command = 0;
-    Serial.println (">> Special - Move interface A toward home for 1 second");
-    startMilliseconds = millis();
-    IF_A_motor_not_timedout = true;  
-
-    starting_encoder_count = IF_A_rotation_counter;
-    
-    while (IF_A_motor_not_timedout ){
-      action_successful = IF_A_drive_motor(IF_A_home_direction, IF_A_slow_speed);  // Stop the motor
-      IF_A_monitor_encoder(1);  // Decrement the counter while homing
-      currentMillis = millis();
-      if (currentMillis - startMilliseconds > 1000) 
-        {
-        IF_A_motor_not_timedout = false;   
-        }
-    }
-    action_successful = IF_A_drive_motor(IF_A_home_direction, 0);  // Stop the motor
-    ending_encoder_count = IF_A_rotation_counter;
-    IF_A_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
-    Serial.print ("Interface A - Counts in 1 second: ");
-    Serial.println (IF_A_delta_encoder_Count);
+    Serial.println (F(">> Special - Move interface A toward home for 1 second"));
+    IF_A_Move_toward_home_for_one_Second();
     break;
-
-
   case 28: 
     command = 0;
-    Serial.println (">> Special - Move interface B toward home for 1 second");
-    startMilliseconds = millis();
-    IF_B_motor_not_timedout = true;  
-    
-    starting_encoder_count = IF_B_rotation_counter;
-    while (IF_B_motor_not_timedout ){
-      action_successful = IF_B_drive_motor( IF_B_home_direction, IF_B_slow_speed);  // Start the motor
-      IF_B_monitor_encoder(1);  // Decrement the counter while homing
-      currentMillis = millis();
-      if (currentMillis - startMilliseconds > 1000) 
-        {
-        IF_B_motor_not_timedout = false;   
-        }
-    }
-    action_successful = IF_B_drive_motor(IF_B_home_direction, 0);  // Stop the motor
-    
-    ending_encoder_count = IF_B_rotation_counter;
-    IF_B_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
-    Serial.print ("Interface B - Counts in 1 second: ");
-    Serial.println (IF_B_delta_encoder_Count);
+    Serial.println (F(">> Special - Move interface B toward home for 1 second"));
+    IF_B_Move_toward_home_for_one_Second();
     break;
 
-
-  case 37: 
-    Serial.println ("R37");
-    IF_C_go_away_from_home_until_limited();
-    break;
 
 
   case 38: 
     command = 0;
-    Serial.println (">> Special - Move interface C toward home for 1 second");
-    startMilliseconds = millis();
-    IF_C_motor_not_timedout = true;  
-    
-    starting_encoder_count = IF_C_rotation_counter;
-    while (IF_C_motor_not_timedout ){
-      action_successful = IF_C_drive_motor( IF_C_home_direction, IF_C_slow_speed);  // Star the motor
-      IF_C_monitor_encoder(1);  // Decrement the counter while homing
-      currentMillis = millis();
-      if (currentMillis - startMilliseconds > 1000) 
-        {
-        IF_C_motor_not_timedout = false;   
-        }
-    }
-    action_successful = IF_C_drive_motor(IF_C_home_direction, 0);  // Stop the motor
-
-    ending_encoder_count = IF_C_rotation_counter;
-    IF_C_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
-    Serial.print ("Interface C - Counts in 1 second: ");
-    Serial.println (IF_C_delta_encoder_Count);
+    Serial.println (F(">> Special - Move interface C toward home for 1 second"));
+    IF_A_Move_toward_home_for_one_Second();
     break;
 
+ 
   case 19: 
     command = 0;
-    Serial.println (">> Special - Move interface A away from home for 1 second");
+    Serial.println (F(">> Special - Move interface A away from home for 1 second"));
     startMilliseconds = millis();
     IF_A_motor_not_timedout = true;  
     
@@ -559,7 +509,81 @@ void loop() {
 }
 
 //=================================================================================================
+
+void IF_A_Move_toward_home_for_one_Second(){
+    startMilliseconds = millis();
+    IF_A_motor_not_timedout = true;  
+
+    starting_encoder_count = IF_A_rotation_counter;
+    
+    while (IF_A_motor_not_timedout ){
+      action_successful = IF_A_drive_motor(IF_A_home_direction, IF_A_slow_speed);  // Stop the motor
+      IF_A_monitor_encoder(1);  // Decrement the counter while homing
+      currentMillis = millis();
+      if (currentMillis - startMilliseconds > 1000) 
+        {
+        IF_A_motor_not_timedout = false;   
+        }
+    }
+    action_successful = IF_A_drive_motor(IF_A_home_direction, 0);  // Stop the motor
+    ending_encoder_count = IF_A_rotation_counter;
+    IF_A_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
+    Serial.print ("Interface A - Counts in 1 second: ");
+    Serial.println (IF_A_delta_encoder_Count);
+}
+//=========================================================
+
+void IF_B_Move_toward_home_for_one_Second(){
+    startMilliseconds = millis();
+    IF_B_motor_not_timedout = true;  
+    
+    starting_encoder_count = IF_B_rotation_counter;
+    while (IF_B_motor_not_timedout ){
+      action_successful = IF_B_drive_motor( IF_B_home_direction, IF_B_slow_speed);  // Start the motor
+      IF_B_monitor_encoder(1);  // Decrement the counter while homing
+      currentMillis = millis();
+      if (currentMillis - startMilliseconds > 1000) 
+        {
+        IF_B_motor_not_timedout = false;   
+        }
+    }
+    action_successful = IF_B_drive_motor(IF_B_home_direction, 0);  // Stop the motor
+    
+    ending_encoder_count = IF_B_rotation_counter;
+    IF_B_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
+    Serial.print ("Interface B - Counts in 1 second: ");
+    Serial.println (IF_B_delta_encoder_Count);
+}
+//=========================================================
+
+void     IF_C_Move_toward_home_for_one_Second(){
+      startMilliseconds = millis();
+      IF_C_motor_not_timedout = true;  
+      
+      starting_encoder_count = IF_C_rotation_counter;
+      while (IF_C_motor_not_timedout ){
+        action_successful = IF_C_drive_motor( IF_C_home_direction, IF_C_slow_speed);  // Star the motor
+        IF_C_monitor_encoder(1);  // Decrement the counter while homing
+        currentMillis = millis();
+        if (currentMillis - startMilliseconds > 1000) 
+          {
+          IF_C_motor_not_timedout = false;   
+          }
+      }
+      action_successful = IF_C_drive_motor(IF_C_home_direction, 0);  // Stop the motor
+  
+      ending_encoder_count = IF_C_rotation_counter;
+      IF_C_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
+      Serial.print ("Interface C - Counts in 1 second: ");
+      Serial.println (IF_C_delta_encoder_Count);
+  }
+ 
+//=================================================================================================
+
 //------------------------------------------
+
+//=================================================================================================
+
 void receiveEvent(int rx_byte_count)    //  Raspberry Pi sending to Arduino 
 {
   for (int i = 0; i < array_size; i++) {    // Clear out old data
@@ -641,11 +665,11 @@ void receiveEvent(int rx_byte_count)    //  Raspberry Pi sending to Arduino
 
 // -----------------------------------------------------------------------
   if (command == 90) {
-    Serial.println ("Rec cmd 90 stat");
+//    Serial.println ("Rec cmd 90 stat");
   }
 
   if (command == 91) {
-    Serial.println ("Rec cmd 91 counts");
+//    Serial.println ("Rec cmd 91 counts");
   }
 }
 
@@ -684,23 +708,20 @@ void sendDataEvent()     // Send data from Arduino to RPI (Need to be very, very
 //  }
 
 
-//  if (command == 17) {
-//    Serial.println ("RECEIVED COMMAND 17");
-////    send_data_array[0] = IF_A_delta_encoder_Count;
-////    length_of_send_data_array = 1;
-//
-//    IF_A_go_away_from_home_until_limited();
-//    }
+  if (command == 17) {
+    send_data_array[0] = IF_A_delta_encoder_Count;
+    length_of_send_data_array = 1;
+  }
 
   if (command == 27) {
     send_data_array[0] = IF_B_delta_encoder_Count;
     length_of_send_data_array = 1;
     }
 
-//  if (command == 37) {
-//    send_data_array[0] = IF_C_delta_encoder_Count;
-//    length_of_send_data_array = 1;
-//    }
+  if (command == 37) {
+    send_data_array[0] = IF_C_delta_encoder_Count;
+    length_of_send_data_array = 1;
+    }
 
   if (command == 90) {
     send_data_array[0] = IF_A_status;
@@ -727,23 +748,27 @@ void sendDataEvent()     // Send data from Arduino to RPI (Need to be very, very
   }
 
   if (command == 90) {
-    Serial.print("90st A");
-    Serial.print(IF_A_status);
-    Serial.print("B");
-    Serial.print(IF_B_status);
-    Serial.print("C");
-    Serial.print(IF_C_status);
-    Serial.println("|");
+    if (debug_control > 200){
+        Serial.print("90st A");
+      Serial.print(IF_A_status);
+      Serial.print("B");
+      Serial.print(IF_B_status);
+      Serial.print("C");
+      Serial.print(IF_C_status);
+      Serial.println("|");
+      }
   }
 
   if (command == 91) {
-    Serial.print("91cts");
-    Serial.print(IF_A_rotation_counter);
-    Serial.print("|");
-    Serial.print(IF_B_rotation_counter);
-    Serial.print("|");
-    Serial.print(IF_C_rotation_counter);
-    Serial.println("|");
+    if (debug_control > 200){
+      Serial.print("91cts");
+      Serial.print(IF_A_rotation_counter);
+      Serial.print("|");
+      Serial.print(IF_B_rotation_counter);
+      Serial.print("|");
+      Serial.print(IF_C_rotation_counter);
+      Serial.println("|");
+      }
   }
 
 }  // end of Send Data Event
@@ -1012,9 +1037,12 @@ bool limit_switch_triggered(int _pin){
 // Monitor home position switch for trigger
 // Stop Motor
 
-//----------
-
+//-------------------------------------------------------------------------------
 void IF_A_go_away_from_home_until_limited(){
+
+  Serial.println (F("STARTING:  IF_A_Move_toward_home_for_one_Second()"));
+  IF_A_Move_toward_home_for_one_Second();
+//  Serial.println (F("ENDING:  IF_A_Move_toward_home_for_one_Second()"));
    
   bool done = false;
   int check_counter = 0;
@@ -1060,7 +1088,7 @@ void IF_A_go_away_from_home_until_limited(){
     // Save current encoder speed for 1 second
     
   
-//    Serial.print ("check_counter: "); Serial.println (check_counter);
+    Serial.print ("check_counter: "); Serial.println (check_counter);
 
     if (check_counter > 16){
       Serial.println ("Check Counter exceeded");
@@ -1069,21 +1097,23 @@ void IF_A_go_away_from_home_until_limited(){
     }
     
     // Compare to typical value for specific joint
-    int alarm_threshold = 6;
-    if (abs( (2 * IF_A_delta_encoder_Count - typical_encoder_speed)) > alarm_threshold ){
+    int alarm_threshold;
+    if (check_counter == 1){
+      alarm_threshold = IF_A_delta_encoder_Count * 0.3;  
+    }
+    
+//    Serial.print ("alarm_threshold: "); Serial.println (alarm_threshold);
+    
+//    if (abs( (2 * IF_A_delta_encoder_Count - typical_encoder_speed)) > alarm_threshold ){
+    if (abs(IF_A_delta_encoder_Count) < alarm_threshold ){
       Serial.println ("Slow Encoder");
       done = true;
       check_counter = 0;
     }
-   
-    
-    // Notify if out of tolerance
-    // Wait 0.25 second
-//    Serial.println ("Waiting ....");
+ 
     delay(1000);
     
-    
-    // Repeat until encoder speed is 50% of typical speed (meaning hit away from home limit)
+    // Repeat until encoder speed is 30% of typical speed (meaning hit away from home limit)
   }  
     
     IF_A_go_to_home();
@@ -1094,16 +1124,111 @@ void IF_A_go_away_from_home_until_limited(){
   
 } // End of go_away_from_home_until_limited()
   
-  
-void IF_C_go_away_from_home_until_limited(){
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+//-------------------------------------------------------------------------------
+void IF_B_go_away_from_home_until_limited(){
+
+  Serial.println (F("STARTING:  IF_B_Move_toward_home_for_one_Second()"));
+  IF_B_Move_toward_home_for_one_Second();
+//  Serial.println (F("ENDING:  IF_B_Move_toward_home_for_one_Second()"));
    
   bool done = false;
   int check_counter = 0;
-  Serial.println ("Starting to move away: C: ");
+//  Serial.println ("Starting to move away: ");
+
+    // Lookup range of typical encoder speeds for specific joint
+  typical_encoder_speed = IF_B_typical_encoder_cnt_in_sec;
+//  Serial.print ("typical_encoder_speed: "); Serial.println (typical_encoder_speed);
+
+  while (!done)
+  {
+    check_counter = check_counter + 1;
+    
+    // Save current encoder value
+    starting_encoder_count = IF_B_rotation_counter;
+//    Serial.print ("starting_encoder_count: "); Serial.println (starting_encoder_count);
+    
+    // Move joint away from home at slow speed for 0.5 second
+    action_successful = IF_B_drive_motor(! IF_B_home_direction, IF_B_slow_speed);
+//    Serial.println ("Starting Motor "); 
+
+    // Delay for 500 millisecond and monitor counts.
+
+    unsigned long startMilliseconds = millis();
+    unsigned long currentMillis = millis();
+       
+    while ( (currentMillis-startMilliseconds) < 500 ){
+      IF_B_monitor_encoder(1);  // Decrement the counter while homing
+      currentMillis = millis();
+      }  // (end of WHILE)
+    
+    // stop motor
+    action_successful = IF_B_drive_motor(! IF_B_home_direction, 0);
+    
+    // Save finish encoder value
+    ending_encoder_count = IF_B_rotation_counter;
+//    Serial.print ("ending_encoder_count: "); Serial.println (ending_encoder_count);
+  
+    // Calculate difference
+    IF_B_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
+    Serial.print ("IF_B_delta_encoder_count: "); Serial.println (IF_B_delta_encoder_Count);
+  
+    // Save current encoder speed for 1 second
+    
+  
+    Serial.print ("check_counter: "); Serial.println (check_counter);
+
+    if (check_counter > 16){
+      Serial.println ("Check Counter exceeded");
+      done = true;
+      check_counter = 0;
+    }
+    
+    // Compare to typical value for specific joint
+    int alarm_threshold;
+    if (check_counter == 1){
+      alarm_threshold = IF_B_delta_encoder_Count * 0.3;  
+    }
+    
+//    Serial.print ("alarm_threshold: "); Serial.println (alarm_threshold);
+    
+//    if (abs( (2 * IF_B_delta_encoder_Count - typical_encoder_speed)) > alarm_threshold ){
+    if (abs(IF_B_delta_encoder_Count) < alarm_threshold ){
+      Serial.println ("Slow Encoder");
+      done = true;
+      check_counter = 0;
+    }
+ 
+    delay(1000);
+    
+    // Repeat until encoder speed is 30% of typical speed (meaning hit away from home limit)
+  }  
+    
+    IF_B_go_to_home();
+    
+    // Drive motor toward home at slow speed
+    // Monitor home position switch for trigger
+    // Stop Motor
+  
+} // End of go_away_from_home_until_limited()
+  
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+//-------------------------------------------------------------------------------
+void IF_C_go_away_from_home_until_limited(){
+
+  Serial.println (F("STARTING:  IF_C_Move_toward_home_for_one_Second()"));
+  IF_C_Move_toward_home_for_one_Second();
+//  Serial.println (F("ENDING:  IF_C_Move_toward_home_for_one_Second()"));
+   
+  bool done = false;
+  int check_counter = 0;
+//  Serial.println ("Starting to move away: ");
 
     // Lookup range of typical encoder speeds for specific joint
   typical_encoder_speed = IF_C_typical_encoder_cnt_in_sec;
-  Serial.print ("typical_encoder_speed: "); Serial.println (typical_encoder_speed);
+//  Serial.print ("typical_encoder_speed: "); Serial.println (typical_encoder_speed);
 
   while (!done)
   {
@@ -1111,11 +1236,11 @@ void IF_C_go_away_from_home_until_limited(){
     
     // Save current encoder value
     starting_encoder_count = IF_C_rotation_counter;
-    Serial.print ("starting_encoder_count: "); Serial.println (starting_encoder_count);
+//    Serial.print ("starting_encoder_count: "); Serial.println (starting_encoder_count);
     
     // Move joint away from home at slow speed for 0.5 second
     action_successful = IF_C_drive_motor(! IF_C_home_direction, IF_C_slow_speed);
-    Serial.println ("Starting Motor C "); 
+//    Serial.println ("Starting Motor "); 
 
     // Delay for 500 millisecond and monitor counts.
 
@@ -1132,7 +1257,7 @@ void IF_C_go_away_from_home_until_limited(){
     
     // Save finish encoder value
     ending_encoder_count = IF_C_rotation_counter;
-    Serial.print ("ending_encoder_count: "); Serial.println (ending_encoder_count);
+//    Serial.print ("ending_encoder_count: "); Serial.println (ending_encoder_count);
   
     // Calculate difference
     IF_C_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
@@ -1148,23 +1273,27 @@ void IF_C_go_away_from_home_until_limited(){
       done = true;
       check_counter = 0;
     }
-
-    //   IF_X_typical_encoder_cnt_in_sec = 94;    // Typical Counts in 1 second
-    // Compare to typical value for specific joint  47
-    int alarm_threshold = 16;
-    if (abs( (2 * IF_C_delta_encoder_Count - typical_encoder_speed)) > alarm_threshold ){
-      Serial.println ("Encoder Speed out of Tolerance for Joint C");
+    
+    // Compare to typical value for specific joint
+    int alarm_threshold;
+    if (check_counter == 1){
+      alarm_threshold = IF_C_delta_encoder_Count * 0.3;  
+    }
+    
+//    Serial.print ("alarm_threshold: "); Serial.println (alarm_threshold);
+    
+//    if (abs( (2 * IF_C_delta_encoder_Count - typical_encoder_speed)) > alarm_threshold ){
+    if (abs(IF_C_delta_encoder_Count) < alarm_threshold ){
+      Serial.println ("Slow Encoder");
       done = true;
       check_counter = 0;
     }
-    // Notify if out of tolerance
-    // Wait 0.25 second
-    Serial.println ("Waiting ....");
+ 
     delay(1000);
     
-    // Repeat until encoder speed is 50% of typical speed (meaning hit away from home limit)
-  }  // End of While Loop
-  
+    // Repeat until encoder speed is 30% of typical speed (meaning hit away from home limit)
+  }  
+    
     IF_C_go_to_home();
     
     // Drive motor toward home at slow speed
@@ -1173,6 +1302,7 @@ void IF_C_go_away_from_home_until_limited(){
   
 } // End of go_away_from_home_until_limited()
   
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 //=================================================================================================
 //  Keep this routine short to reduce the chance  of missing an edge transition
