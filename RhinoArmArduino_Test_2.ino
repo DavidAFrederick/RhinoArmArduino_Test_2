@@ -2,7 +2,7 @@
 //#d e f ine SLAVE_ADDRESS 0x08
 //############################################
 
-// Dec 22, 2023   Interface A working - Arduino
+// Dec 27, 2023   
 // On Git      || Near line 212 for interface to joint definition
 
 
