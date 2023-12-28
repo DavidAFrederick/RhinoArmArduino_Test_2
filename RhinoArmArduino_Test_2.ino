@@ -93,7 +93,7 @@ int slave_address_sensor_pin = A3;       // High = Address = 8, low = Address = 
 int slave_address_sensor = 0;
 
 int command = 0;
-
+bool last_command_complete = false;
 bool action_successful = false;
 int debug_control = 10;
 
@@ -291,6 +291,7 @@ void loop() {
 
   case 10:    // Home Joint A   
     command = 0;     // Clear the command so that it does not run again 
+//    last_command_complete = false;
         if (debug_control > 2) Serial.println (F("Command 10 - Home Joint A"));
     IF_A_go_to_home();
     break;
@@ -700,6 +701,11 @@ void sendDataEvent()     // Send data from Arduino to RPI (Need to be very, very
   send_data_array[5] = 0;
   send_data_array[6] = 0;
 
+//  Need to update this for waiting last command to complete
+//  if (command == 10) {
+//    send_data_array[length_of_send_data_array - 1] = last_command_complete;
+//  }
+
 
 //  if (command == 11) {
 //    send_data_array[length_of_send_data_array - 1] = IF_A_status;
@@ -723,10 +729,10 @@ void sendDataEvent()     // Send data from Arduino to RPI (Need to be very, very
 
     // Returns zero when limit switch engaged
 
-    Serial.print ("L");
-    Serial.print (send_data_array[0]);
-    Serial.print (send_data_array[1]);
-    Serial.println (send_data_array[2]);
+//    Serial.print ("L");
+//    Serial.print (send_data_array[0]);
+//    Serial.print (send_data_array[1]);
+//    Serial.println (send_data_array[2]);
 
 
 //    
@@ -774,7 +780,8 @@ void sendDataEvent()     // Send data from Arduino to RPI (Need to be very, very
 
     send_data_array[4] = (IF_C_rotation_counter >> 8) & 0xff;  
     send_data_array[5] = IF_C_rotation_counter % 256;   
-    length_of_send_data_array = 6;
+    send_data_array[6] = last_command_complete;
+    length_of_send_data_array = 7;
     }
 
   for (int i = 0; i < length_of_send_data_array; i++)
@@ -813,9 +820,11 @@ void sendDataEvent()     // Send data from Arduino to RPI (Need to be very, very
 
 //=================================================================================================
 //=================================================================================================
-//  IF_A_home_achieved
+//  
 //=================================================================================================
 bool IF_A_go_to_home(){
+    last_command_complete = false;
+//    Serial.print(F("LCC:"));  Serial.println(last_command_complete);
     if (debug_control > 2) Serial.println(F("IF_A_go_to_home ")); 
     
     action_successful = IF_A_drive_motor(IF_A_home_direction, IF_A_slow_speed);
@@ -851,10 +860,10 @@ bool IF_A_go_to_home(){
         
       if (debug_control > 2) 
         if (limit_switch_status) Serial.println(F("Homing Limit Switch A Detected"));
-        
+       
     }  // (end of WHILE)
 
-    if (limit_switch_status){
+    if (limit_switch_status){                //  Not sure why this code is used twice...
         IF_A_home_achieved = true;
         IF_A_status = 2;
         Serial.println ("HOME ACHIEVED");
@@ -865,13 +874,20 @@ bool IF_A_go_to_home(){
   if (debug_control > 2) { Serial.print(F("IF_A_rotation_counter: "));  Serial.println(IF_A_rotation_counter);}
   IF_A_rotation_counter = 0;
   if (debug_control > 2) Serial.println(F("IF_A_rotation_counter reset to zero: "));
+
+  Serial.println(F("GOTO HOME IF-A COMPLETE "));
+  last_command_complete = true;
+  Serial.print(F("LCC:"));  Serial.println(last_command_complete);
+
   return IF_A_home_achieved;
 }
 
 //=================================================================================================
-//void IF_B_go_to_home(){
 
 bool IF_B_go_to_home(){
+      last_command_complete = false;
+//    Serial.print(F("LCC:"));  Serial.println(last_command_complete);
+
     if (debug_control > 2) Serial.println(F("IF_B_go_to_home ")); 
     
     action_successful = IF_B_drive_motor(IF_B_home_direction, IF_B_slow_speed);
@@ -921,12 +937,20 @@ bool IF_B_go_to_home(){
   if (debug_control > 2) { Serial.print(F("IF_B_rotation_counter: "));  Serial.println(IF_B_rotation_counter);}
   IF_B_rotation_counter = 0;
   if (debug_control > 2) Serial.print(F("IF_B_rotation_counter reset to zero: "));
+
+  Serial.print(F("GOTO HOME IF-B COMPLETE "));
+  last_command_complete = true;
+  Serial.print(F("LCC:"));  Serial.println(last_command_complete);
+
   return IF_B_home_achieved;
 }
 
 //=================================================================================================
 
 bool IF_C_go_to_home(){
+      last_command_complete = false;
+//    Serial.print(F("LCC:"));  Serial.println(last_command_complete);
+
     if (debug_control > 2) Serial.println(F("IF_C_go_to_home ")); 
     
     action_successful = IF_C_drive_motor(IF_C_home_direction, IF_C_slow_speed);
@@ -976,6 +1000,11 @@ bool IF_C_go_to_home(){
   if (debug_control > 2) { Serial.print(F("IF_C_rotation_counter: "));  Serial.println(IF_C_rotation_counter);}
   IF_C_rotation_counter = 0;
   if (debug_control > 2) Serial.print(F("IF_C_rotation_counter reset to zero: "));
+
+  Serial.print(F("GOTO HOME IF-C COMPLETE "));
+  last_command_complete = true;
+  Serial.print(F("LCC:"));  Serial.println(last_command_complete);
+  
   return IF_C_home_achieved;
 }
 
@@ -1077,17 +1106,16 @@ bool limit_switch_triggered(int _pin){
 //-------------------------------------------------------------------------------
 void IF_A_go_away_from_home_until_limited(){
 
+  last_command_complete = false;
+  
   Serial.println (F("STARTING:  IF_A_Move_toward_home_for_one_Second()"));
   IF_A_Move_toward_home_for_one_Second();
-//  Serial.println (F("ENDING:  IF_A_Move_toward_home_for_one_Second()"));
    
   bool done = false;
   int check_counter = 0;
-//  Serial.println ("Starting to move away: ");
 
     // Lookup range of typical encoder speeds for specific joint
   typical_encoder_speed = IF_A_typical_encoder_cnt_in_sec;
-//  Serial.print ("typical_encoder_speed: "); Serial.println (typical_encoder_speed);
 
   while (!done)
   {
@@ -1095,11 +1123,9 @@ void IF_A_go_away_from_home_until_limited(){
     
     // Save current encoder value
     starting_encoder_count = IF_A_rotation_counter;
-//    Serial.print ("starting_encoder_count: "); Serial.println (starting_encoder_count);
     
     // Move joint away from home at slow speed for 0.5 second
     action_successful = IF_A_drive_motor(! IF_A_home_direction, IF_A_slow_speed);
-//    Serial.println ("Starting Motor "); 
 
     // Delay for 500 millisecond and monitor counts.
 
@@ -1116,14 +1142,12 @@ void IF_A_go_away_from_home_until_limited(){
     
     // Save finish encoder value
     ending_encoder_count = IF_A_rotation_counter;
-//    Serial.print ("ending_encoder_count: "); Serial.println (ending_encoder_count);
   
     // Calculate difference
     IF_A_delta_encoder_Count = abs(ending_encoder_count-starting_encoder_count);
     Serial.print ("IF_A_delta_encoder_count: "); Serial.println (IF_A_delta_encoder_Count);
   
     // Save current encoder speed for 1 second
-    
   
     Serial.print ("check_counter: "); Serial.println (check_counter);
 
@@ -1139,9 +1163,7 @@ void IF_A_go_away_from_home_until_limited(){
       alarm_threshold = IF_A_delta_encoder_Count * 0.3;  
     }
     
-//    Serial.print ("alarm_threshold: "); Serial.println (alarm_threshold);
     
-//    if (abs( (2 * IF_A_delta_encoder_Count - typical_encoder_speed)) > alarm_threshold ){
     if (abs(IF_A_delta_encoder_Count) < alarm_threshold ){
       Serial.println ("Slow Encoder");
       done = true;
@@ -1152,8 +1174,12 @@ void IF_A_go_away_from_home_until_limited(){
     
     // Repeat until encoder speed is 30% of typical speed (meaning hit away from home limit)
   }  
-    
+
+    //  "last_command_complete" not updated here. Updating within GO_to_Home function
+
+    Serial.println (F("Within Find home: - Before last IF-A goto home"));
     IF_A_go_to_home();
+    Serial.println (F("Within Find home: - After last IF-A goto home"));
     
     // Drive motor toward home at slow speed
     // Monitor home position switch for trigger
@@ -1165,7 +1191,7 @@ void IF_A_go_away_from_home_until_limited(){
 
 //-------------------------------------------------------------------------------
 void IF_B_go_away_from_home_until_limited(){
-
+  last_command_complete = false;
   Serial.println (F("STARTING:  IF_B_Move_toward_home_for_one_Second()"));
   IF_B_Move_toward_home_for_one_Second();
 //  Serial.println (F("ENDING:  IF_B_Move_toward_home_for_one_Second()"));
@@ -1254,7 +1280,7 @@ void IF_B_go_away_from_home_until_limited(){
 
 //-------------------------------------------------------------------------------
 void IF_C_go_away_from_home_until_limited(){
-
+  last_command_complete = false;
   Serial.println (F("STARTING:  IF_C_Move_toward_home_for_one_Second()"));
   IF_C_Move_toward_home_for_one_Second();
 //  Serial.println (F("ENDING:  IF_C_Move_toward_home_for_one_Second()"));
@@ -1384,6 +1410,7 @@ void IF_C_monitor_encoder(int increment_direction){
 //=================================================================================================
 bool IF_A_move_to_target_Count(int target_count ){
     bool command_successful = false;
+    last_command_complete = false;
 
     // Add some range checking of the target value here
 
@@ -1483,14 +1510,16 @@ bool IF_A_move_to_target_Count(int target_count ){
 
   command_successful = encoder_limit_not_hit && IF_A_motor_not_timedout;
 
+  last_command_complete = true;
+
   return command_successful;
 }
 
 //=================================================================================================
-//bool IF_B_move_to_target_Count(int target_count ){
 bool IF_B_move_to_target_Count(int target_count ){
     bool command_successful = false;
-
+    last_command_complete = false;
+    
     // Add some range checking of the target value here
 
     // Log  the command and target  count
@@ -1589,13 +1618,16 @@ bool IF_B_move_to_target_Count(int target_count ){
 
   command_successful = encoder_limit_not_hit && IF_B_motor_not_timedout;
 
+  last_command_complete = true;
+
   return command_successful;
 }
 
 //=================================================================================================
 bool IF_C_move_to_target_Count(int target_count ){
     bool command_successful = false;
-
+    last_command_complete = false;
+    
     // Add some range checking of the target value here
 
     // Log  the command and target  count
@@ -1695,6 +1727,7 @@ bool IF_C_move_to_target_Count(int target_count ){
   if (debug_control > 2) { Serial.print(F("IF_C_rotation_counter: "));  Serial.println(IF_C_rotation_counter); }
 
   command_successful = encoder_limit_not_hit && IF_C_motor_not_timedout;
+  last_command_complete = true;
 
   return command_successful;
 }
@@ -1855,13 +1888,13 @@ void set_interface_X_parameters_to_Joint(char joint){
     IF_X_home_direction             = 1;      //
     IF_X_slow_speed                 = 150;    // PWM value
     IF_X_max_speed                  = 200;    // PWM value
-    IF_X_motor_timeout_milliseconds = 10000;  // Milliseconds
+    IF_X_motor_timeout_milliseconds = 15000;  // Milliseconds
     IF_X_typical_encoder_cnt_in_sec = 94;    // Typical Counts in 1 second
     break;
 
   case 'D':    // Joint C   
     IF_X_range_full_count           = 700;   // Counts
-    IF_X_home_direction             = 0;      //
+    IF_X_home_direction             = 1;      //   WAS 0 prior to 12/26/2023
     IF_X_slow_speed                 = 150;    // PWM value
     IF_X_max_speed                  = 200;    // PWM value
     IF_X_motor_timeout_milliseconds = 10000;  // Milliseconds
