@@ -60,13 +60,13 @@ int IF_A_home_direction = 1;
 int IF_B_home_direction = 1;
 int IF_C_home_direction = 1;
 
-int IF_A_slow_speed = 150;     
+int IF_A_slow_speed = 150;     ///  Need to find out if smaller is faster or slower??
 int IF_B_slow_speed = 150;
 int IF_C_slow_speed = 150;
 
 int IF_A_max_speed = 100;     
 int IF_B_max_speed = 100;
-int IF_C_max_speed = 100;
+int IF_C_max_speed = 60;   // Line 1709
 
 bool IF_A_motor_not_timedout = true;
 bool IF_B_motor_not_timedout = true;
@@ -75,6 +75,14 @@ bool IF_C_motor_not_timedout = true;
 int  IF_A_motor_timeout_milliseconds = 10000;
 int  IF_B_motor_timeout_milliseconds = 10000;
 int  IF_C_motor_timeout_milliseconds = 10000;
+
+int  IF_A_JointMovementThreshold = 10;
+int  IF_B_JointMovementThreshold = 10;
+int  IF_C_JointMovementThreshold = 10;
+int  IF_D_JointMovementThreshold = 10;
+int  IF_E_JointMovementThreshold = 10;
+int  IF_F_JointMovementThreshold = 10;
+
 
 int  IF_A_typical_encoder_cnt_in_sec = 0;
 int  IF_B_typical_encoder_cnt_in_sec = 0;
@@ -87,6 +95,7 @@ int  IF_X_slow_speed = 0;
 int  IF_X_max_speed = 0;
 int  IF_X_motor_timeout_milliseconds = 0;
 int  IF_X_typical_encoder_cnt_in_sec = 0;
+int  IF_X_JointMovementThreshold = 0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 int slave_address_sensor_pin = A3;       // High = Address = 8, low = Address = 9
@@ -95,7 +104,7 @@ int slave_address_sensor = 0;
 int command = 0;
 bool last_command_complete = false;
 bool action_successful = false;
-int debug_control = 10;
+int debug_control = 10;  // Was 10
 
 long previousMillis = 0; 
 long interval = 1000; 
@@ -621,8 +630,7 @@ void receiveEvent(int rx_byte_count)    //  Raspberry Pi sending to Arduino
       if ((command >=40) && (command <= 70)){
         command = command-30;  
       }
-      Serial.print ("  Last CMD: ");
-      Serial.println (command);
+      if (debug_control > 100) {Serial.print ("  Last CMD: ");  Serial.println (command);}
     }
 
     last_command_received = command;  // Used to determine what data to send back in the send data
@@ -686,9 +694,11 @@ void sendDataEvent()     // Send data from Arduino to RPI (Need to be very, very
 {
 
   command = last_command_received;
-  Serial.print ("c:");
-  Serial.println (command);
-  
+  if ((command != 90) && (command != 91)){   ////  April 17, 2024 - Stop printing status commmands
+    Serial.print ("c:");
+    Serial.println (command);
+  }
+
   for (int i = 0; i < array_size; i++) {    // Clear out old data
     send_data_array[i] = 0;
     }
@@ -1417,7 +1427,11 @@ bool IF_A_move_to_target_Count(int target_count ){
     // Log  the command and target  count
     if (debug_control > 2) {
       Serial.print(F("IF_A moving to target count: ")); 
-      Serial.println (target_count);
+      Serial.print (target_count);             ////  April 17, 2024
+      Serial.print ("/ Ang A: ");              ////  Angle to Count Conversion done in Python
+      Serial.println (target_count / 12.3);    ////  Just reversing for debugging
+      Serial.print ("  / Ang D: ");            ////  
+      Serial.println (target_count / 14.286);  ////
       Serial.print(F("IF_A IF_A_home_achieved: ")); 
       Serial.println (IF_A_home_achieved);
     }
@@ -1458,7 +1472,7 @@ bool IF_A_move_to_target_Count(int target_count ){
     }
 
     // Start the motor moving
-    action_successful = IF_A_drive_motor( motion_direction, IF_A_slow_speed);   // 
+    action_successful = IF_A_drive_motor( motion_direction, IF_A_max_speed);   // 
 
     // Monitor for achieving target count, WHILE monitoring timeout or hitting the home limit (unexpectedly)
 
@@ -1466,6 +1480,8 @@ bool IF_A_move_to_target_Count(int target_count ){
     bool encoder_limit_hit = false;
     bool IF_A_motor_not_at_target_count = true;
     int  target_count_window_size = 3;
+    int  previousIF_A_rotation_counter = IF_A_rotation_counter;   ////  April 17, 2024
+//    int  IF_A_JointMovementThreshold = 5;                              ////
   
     unsigned long startMilliseconds = millis();      // Timers for timeout monitoring
     unsigned long previousMillidisplay = millis();
@@ -1497,9 +1513,15 @@ bool IF_A_move_to_target_Count(int target_count ){
         }
 
       // Print the current encoder count every 500 milliseconds  
-      if (currentMillis - previousMillidisplay > 100) 
+      if (currentMillis - previousMillidisplay > 500)             ////  Apr 17, 2024 update change back to 500 msec 
         {
+          // Determine if the encoder is moving by minimal amount          ////  Not Jammed
+          if (abs (previousIF_A_rotation_counter-IF_A_rotation_counter) < IF_A_JointMovementThreshold){   ////
+            if (debug_control > 2) {Serial.print(F("Encoder A TIMEOUT == ")); Serial.println(IF_A_rotation_counter); }
+              IF_A_motor_not_timedout = false;                             //// Counter (Motor) not moving enough 
+          }                                                                ////
           previousMillidisplay = currentMillis;
+          previousIF_A_rotation_counter = IF_A_rotation_counter;           ////
           if (debug_control > 2) {Serial.print(F("Encoder A: ")); Serial.println(IF_A_rotation_counter); }
         }
     }
@@ -1525,7 +1547,11 @@ bool IF_B_move_to_target_Count(int target_count ){
     // Log  the command and target  count
     if (debug_control > 2) {
       Serial.print(F("IF_B moving to target count: ")); 
-      Serial.println (target_count);
+      Serial.print (target_count);             ////  April 17, 2024
+      Serial.print ("/ Ang B: ");              ////  Conversion done in python code
+      Serial.println (target_count / 2.44);    ////
+      Serial.print ("  / Ang E: ");            ////  
+      Serial.println (target_count / 8.22);  ////
       Serial.print(F("IF_B IF_B_home_achieved: ")); 
       Serial.println (IF_B_home_achieved);
     }
@@ -1566,7 +1592,7 @@ bool IF_B_move_to_target_Count(int target_count ){
     }
 
     // Start the motor moving
-    action_successful = IF_B_drive_motor( motion_direction, IF_B_slow_speed);   // 
+    action_successful = IF_B_drive_motor( motion_direction, IF_B_max_speed);   // 
 
     // Monitor for achieving target count, WHILE monitoring timeout or hitting the home limit (unexpectedly)
 
@@ -1574,6 +1600,9 @@ bool IF_B_move_to_target_Count(int target_count ){
     bool encoder_limit_hit = false;
     bool IF_B_motor_not_at_target_count = true;
     int  target_count_window_size = 3;
+    int  previousIF_B_rotation_counter = IF_B_rotation_counter;   ////  April 17, 2024
+    int  JointMovementThreshold = 5;                              ////
+
   
     unsigned long startMilliseconds = millis();      // Timers for timeout monitoring
     unsigned long previousMillidisplay = millis();
@@ -1605,8 +1634,14 @@ bool IF_B_move_to_target_Count(int target_count ){
         }
 
       // Print the current encoder count every 500 milliseconds  
-      if (currentMillis - previousMillidisplay > 100) 
+      if (currentMillis - previousMillidisplay > 500) 
         {
+          // Determine if the encoder is moving by minimal amount          ////  Not Jammed
+          if (abs (previousIF_B_rotation_counter-IF_B_rotation_counter) < JointMovementThreshold){   ////
+            if (debug_control > 2) {Serial.print(F("Encoder B TIMEOUT == ")); Serial.println(IF_B_rotation_counter); }
+              IF_B_motor_not_timedout = false;                             //// Counter (Motor) not moving enough 
+          }                                                                ////
+          previousIF_B_rotation_counter = IF_B_rotation_counter;           ////
           previousMillidisplay = currentMillis;
           if (debug_control > 2) {Serial.print(F("Encoder B: ")); Serial.println(IF_B_rotation_counter); }
         }
@@ -1635,7 +1670,11 @@ bool IF_C_move_to_target_Count(int target_count ){
       Serial.print(F("IF_C CURRENT count: ")); 
       Serial.println (IF_C_rotation_counter);
       Serial.print(F("IF_C moving to target count: ")); 
-      Serial.println (target_count);
+      Serial.print (target_count);              ////  April 17, 2024
+      Serial.print ("/ Ang C: ");               ////  Conversion done in Python codde
+      Serial.println (target_count / 9.283);    ////
+      Serial.print ("  / Ang F: ");             ////  
+      Serial.println (target_count / 4.235);    ////
       Serial.print(F("IF_C IF_C_home_achieved: ")); 
       Serial.println (IF_C_home_achieved);
     }
@@ -1676,7 +1715,12 @@ bool IF_C_move_to_target_Count(int target_count ){
     }
 
     // Start the motor moving
-    action_successful = IF_C_drive_motor( motion_direction, IF_C_slow_speed);   // 
+////    action_successful = IF_C_drive_motor( motion_direction, IF_C_slow_speed);   //  //// April 17, 2024 speedup
+    action_successful = IF_C_drive_motor( motion_direction, IF_C_max_speed);   // 
+    Serial.print (F("FAST SPEED  "));
+    Serial.println (IF_C_max_speed);
+
+            
 
     // Monitor for achieving target count, WHILE monitoring timeout or hitting the home limit (unexpectedly)
 
@@ -1684,6 +1728,9 @@ bool IF_C_move_to_target_Count(int target_count ){
     bool encoder_limit_hit = false;
     bool IF_C_motor_not_at_target_count = true;
     int  target_count_window_size = 10;
+    int  previousIF_C_rotation_counter = IF_C_rotation_counter;   ////  April 17, 2024
+    int  JointMovementThreshold = 5;                              ////
+
   
     unsigned long startMilliseconds = millis();      // Timers for timeout monitoring
     unsigned long previousMillidisplay = millis();
@@ -1715,8 +1762,14 @@ bool IF_C_move_to_target_Count(int target_count ){
         }
 
       // Print the current encoder count every 500 milliseconds  
-      if (currentMillis - previousMillidisplay > 100) 
+      if (currentMillis - previousMillidisplay > 500) 
         {
+          // Determine if the encoder is moving by minimal amount          ////  Not Jammed
+          if (abs (previousIF_C_rotation_counter-IF_C_rotation_counter) < JointMovementThreshold){   ////
+            if (debug_control > 2) {Serial.print(F("Encoder C TIMEOUT == ")); Serial.println(IF_C_rotation_counter); }
+              IF_C_motor_not_timedout = false;                             //// Counter (Motor) not moving enough 
+          }                                                                ////
+          previousIF_C_rotation_counter = IF_C_rotation_counter;           ////
           previousMillidisplay = currentMillis;
           if (debug_control > 2) {Serial.print(F("Encoder C: ")); Serial.println(IF_C_rotation_counter); }
         }
@@ -1864,59 +1917,64 @@ void set_interface_X_parameters_to_Joint(char joint){
     
   switch (joint)
   {
-  case 'A':    // Joint C   
+  case 'A':    // Joint A  
     IF_X_range_full_count           = 80;   // Counts
     IF_X_home_direction             = 0;      //
-    IF_X_slow_speed                 = 80;    // PWM value
-    IF_X_max_speed                  = 200;    // PWM value
+    IF_X_slow_speed                 = 120;    // PWM value //// Was 80
+    IF_X_max_speed                  = 255;    // PWM value
     IF_X_motor_timeout_milliseconds = 10000;  // Milliseconds
     IF_X_typical_encoder_cnt_in_sec = 20;    // Typical Counts in 1 second
-    
+    IF_X_JointMovementThreshold     = 5;     //  One third of the one second count
     break;
 
-  case 'B':    // Joint C   
+  case 'B':    // Joint B   
     IF_X_range_full_count           = 880;   // Counts
     IF_X_home_direction             = 1;      //
-    IF_X_slow_speed                 = 200;    // PWM value
-    IF_X_max_speed                  = 200;    // PWM value
+    IF_X_slow_speed                 = 220;    // PWM value
+    IF_X_max_speed                  = 250;    // PWM value
     IF_X_motor_timeout_milliseconds = 10000;  // Milliseconds
     IF_X_typical_encoder_cnt_in_sec = 68;    // Typical Counts in 1 second
+    IF_X_JointMovementThreshold     = 12;
     break;
   
   case 'C':    // Joint C   
     IF_X_range_full_count           = 1300;   // Counts
     IF_X_home_direction             = 1;      //
-    IF_X_slow_speed                 = 150;    // PWM value
-    IF_X_max_speed                  = 200;    // PWM value
+    IF_X_slow_speed                 = 200;    // PWM value
+    IF_X_max_speed                  = 250;    // PWM value
     IF_X_motor_timeout_milliseconds = 15000;  // Milliseconds
     IF_X_typical_encoder_cnt_in_sec = 94;    // Typical Counts in 1 second
+    IF_X_JointMovementThreshold     = 33;
     break;
 
-  case 'D':    // Joint C   
+  case 'D':    // Joint D   
     IF_X_range_full_count           = 700;   // Counts
     IF_X_home_direction             = 1;      //   WAS 0 prior to 12/26/2023
-    IF_X_slow_speed                 = 150;    // PWM value
-    IF_X_max_speed                  = 200;    // PWM value
+    IF_X_slow_speed                 = 200;    // PWM value
+    IF_X_max_speed                  = 255;    // PWM value
     IF_X_motor_timeout_milliseconds = 10000;  // Milliseconds
     IF_X_typical_encoder_cnt_in_sec = 100;    // Typical Counts in 1 second
+    IF_X_JointMovementThreshold     = 15;
     break;
     
-  case 'E':    // Joint C   
+  case 'E':    // Joint E   
     IF_X_range_full_count           = 740;   // Counts
     IF_X_home_direction             = 0;      //
-    IF_X_slow_speed                 = 150;    // PWM value
-    IF_X_max_speed                  = 200;    // PWM value
+    IF_X_slow_speed                 = 200;    // PWM value
+    IF_X_max_speed                  = 255;    // PWM value
     IF_X_motor_timeout_milliseconds = 10000;  // Milliseconds
     IF_X_typical_encoder_cnt_in_sec = 68;    // Typical Counts in 1 second
+    IF_X_JointMovementThreshold     = 35;
     break;
     
   case 'F':    // Joint C   
     IF_X_range_full_count           = 720;   // Counts
     IF_X_home_direction             = 0;      //
     IF_X_slow_speed                 = 200;    // PWM value
-    IF_X_max_speed                  = 200;    // PWM value
+    IF_X_max_speed                  = 255;    // PWM value    ////  April 17, 2024
     IF_X_motor_timeout_milliseconds = 10000;  // Milliseconds
     IF_X_typical_encoder_cnt_in_sec = 77;    // Typical Counts in 1 second
+    IF_X_JointMovementThreshold     = 52;
     break;
   }
 
@@ -1937,6 +1995,7 @@ void copy_interface_X_parameters_to_interface_(char interface){
     IF_A_max_speed                  = IF_X_max_speed;                  
     IF_A_motor_timeout_milliseconds = IF_X_motor_timeout_milliseconds; 
     IF_A_typical_encoder_cnt_in_sec = IF_X_typical_encoder_cnt_in_sec;
+    IF_A_JointMovementThreshold     = IF_X_JointMovementThreshold;
     break;
 
   case 'B':    // Joint B   
@@ -1946,6 +2005,7 @@ void copy_interface_X_parameters_to_interface_(char interface){
     IF_B_max_speed                  = IF_X_max_speed;                  
     IF_B_motor_timeout_milliseconds = IF_X_motor_timeout_milliseconds; 
     IF_B_typical_encoder_cnt_in_sec = IF_X_typical_encoder_cnt_in_sec;
+    IF_B_JointMovementThreshold     = IF_X_JointMovementThreshold;
     break;
   
   case 'C':    // Joint C   
@@ -1955,6 +2015,7 @@ void copy_interface_X_parameters_to_interface_(char interface){
     IF_C_max_speed                  = IF_X_max_speed;                  
     IF_C_motor_timeout_milliseconds = IF_X_motor_timeout_milliseconds; 
     IF_C_typical_encoder_cnt_in_sec = IF_X_typical_encoder_cnt_in_sec;
+    IF_C_JointMovementThreshold     = IF_X_JointMovementThreshold;
     break;
   }
 }
@@ -1970,6 +2031,7 @@ if (debug_control > 2) {
     Serial.print(F("IF_A_slow_speed: "));                 Serial.println(IF_A_slow_speed);
     Serial.print(F("IF_A_max_speed: "));                  Serial.println(IF_A_max_speed);
     Serial.print(F("IF_A_motor_timeout_milliseconds: ")); Serial.println(IF_A_motor_timeout_milliseconds);
+    Serial.print(F("IF_A_JointMovementThreshold: "));     Serial.println(IF_A_JointMovementThreshold);
     Serial.println(F(" "));
 
     Serial.print(F("IF_B_range_full_count: "));           Serial.println(IF_B_range_full_count);
@@ -1977,13 +2039,15 @@ if (debug_control > 2) {
     Serial.print(F("IF_B_slow_speed: "));                 Serial.println(IF_B_slow_speed);
     Serial.print(F("IF_B_max_speed: "));                  Serial.println(IF_B_max_speed);
     Serial.print(F("IF_B_motor_timeout_milliseconds: ")); Serial.println(IF_B_motor_timeout_milliseconds);
-    
+    Serial.print(F("IF_B_JointMovementThreshold: "));     Serial.println(IF_B_JointMovementThreshold);
     Serial.println(F(" "));
+
     Serial.print(F("IF_C_range_full_count: "));           Serial.println(IF_C_range_full_count);
     Serial.print(F("IF_C_home_direction: "));             Serial.println(IF_C_home_direction);
     Serial.print(F("IF_C_slow_speed: "));                 Serial.println(IF_C_slow_speed);
     Serial.print(F("IF_C_max_speed: "));                  Serial.println(IF_C_max_speed);
     Serial.print(F("IF_C_motor_timeout_milliseconds: ")); Serial.println(IF_C_motor_timeout_milliseconds);
+    Serial.print(F("IF_C_JointMovementThreshold: "));     Serial.println(IF_C_JointMovementThreshold);
     Serial.println(F(" "));
   }
 }
